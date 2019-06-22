@@ -8,62 +8,6 @@ import os
 import serial
 import serial.tools.list_ports
 
-class Guide():
-	def __init__():
-		pass
-
-class MyThread(threading.Thread):
-
-    def __init__(self):
-
-        threading.Thread.__init__(self)
-
-
-    def setTarget(self, target):
-        self.target = target
-
-    def run(self):
-        for i in range(10):
-            if i % 2 == 0:
-                img = self.img
-            else:
-                img = 255 - self.img
-            time.sleep(1)
-            evt = self.target.__class__.Event(img = img, msg = 'hoge %d' % i)
-            wx.PostEvent(self.target, evt)
-
-class MyBluetooth():
-	Event, EVT_GETSERIAL = wx.lib.newevent.NewEvent()
-	def __init__(self, parent, setter, ID = wx.ID_ANY):
-		self.setter = setter
-		self.size = self.setter.size
-
-		wx.Panel.__init__(self, parent, ID, size = self.size)
-		self.stbmp = wx.StaticBitmap(self, bitmap = wx.EmptyBitmap(self.size[0], self.size[1]))
-
-		setter.setTarget(self)
-		self.Bind(ImageViewer.EVT_NEWIMAGE, self.newImageArrived)
-
-	def start(self):
-		self.setter.start()
-
-	def stop(self):
-		self.setter.stop()
-
-	def redraw(self, img):
-		assert(img.ndim == 3)
-		assert(img.dtype == np.uint8)
-		assert(img.shape[0] == self.size[1] and img.shape[1] == self.size[0])
-
-		buf = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-		bmp = wx.BitmapFromBuffer(img.shape[1], img.shape[0], buf)
-		self.stbmp.SetBitmap(bmp)
-
-	def newImageArrived(self, event):
-		self.redraw(event.img)
-		print(event.msg)
-
-#カメラキャプチャ表示用パネル
 class WebcamPanel(wx.Panel):
 	def __init__(self, parent, camera, fps=10):#fps15くらいが目安
 
