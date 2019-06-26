@@ -8,61 +8,65 @@ import os
 import serial
 import serial.tools.list_ports
 
+
 class WebcamPanel(wx.Panel):
-	def __init__(self, parent, camera, fps=10):#fps15くらいが目安
+    def __init__(self, parent, camera, fps=10):  # fps15くらいが目安
 
-		wx.Panel.__init__(self, parent)
+        wx.Panel.__init__(self, parent)
 
-		self.camera = camera
-		return_value, frame = self.camera.read()
-		height, width = frame.shape[:2]
+        self.camera = camera
+        return_value, frame = self.camera.read()
+        height, width = frame.shape[:2]
 
-		frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-		self.bmp = wx.BitmapFromBuffer(width, height, frame)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        self.bmp = wx.BitmapFromBuffer(width, height, frame)
 
-		self.SetSize((width,height))
+        self.SetSize((width, height))
 
-		self.timer = wx.Timer(self)
-		self.timer.Start(1000./fps)
+        self.timer = wx.Timer(self)
+        self.timer.Start(1000. / fps)
 
-		self.Bind(wx.EVT_PAINT, self.OnPaint)
-		self.Bind(wx.EVT_TIMER, self.NextFrame)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_TIMER, self.NextFrame)
 
-	def OnPaint(self, e):
-		dc = wx.BufferedPaintDC(self)
-		dc.DrawBitmap(self.bmp, 0, 0)
+    def OnPaint(self, e):
+        dc = wx.BufferedPaintDC(self)
+        dc.DrawBitmap(self.bmp, 0, 0)
 
-	def NextFrame(self, e):
-		return_value, frame = self.camera.read()
-		if return_value:
-			frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-			self.bmp.CopyFromBuffer(frame)
-			self.Refresh()
+    def NextFrame(self, e):
+        return_value, frame = self.camera.read()
+        if return_value:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            self.bmp.CopyFromBuffer(frame)
+            self.Refresh()
+
 
 class MainWindow(wx.Frame):
-	def __init__(self, camera):
+    def __init__(self, camera):
 
-		#inheritence
-		wx.Frame.__init__(self, None)
-		self.Title = "webcam"
+        # inheritence
+        wx.Frame.__init__(self, None)
+        self.Title = "webcam"
 
-		#main ui
-		self.webcampanel = WebcamPanel(self, camera)
+        # main ui
+        self.webcampanel = WebcamPanel(self, camera)
 
-		main_window_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_window_sizer = wx.BoxSizer(wx.VERTICAL)
 
-		main_window_sizer.Add(self.webcampanel, 7, wx.CENTER | wx.BOTTOM | wx.EXPAND, 1)
-		main_window_sizer.SetItemMinSize(self.webcampanel, (640,480))
+        main_window_sizer.Add(self.webcampanel, 7,
+                              wx.CENTER | wx.BOTTOM | wx.EXPAND, 1)
+        main_window_sizer.SetItemMinSize(self.webcampanel, (640, 480))
 
-		self.SetSizer(main_window_sizer)
-		main_window_sizer.Fit(self)
-		guide_window = guideWindow(self)
-		guide_window.Show()
+        self.SetSizer(main_window_sizer)
+        main_window_sizer.Fit(self)
+        guide_window = guideWindow(self)
+        guide_window.Show()
 
 
 class guidePanel(wx.Panel):
-	def __init__(self, parent):
-		wx.Panel.__init__(self, parent)
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+
 
 class guideWindow(wx.Frame):
     def __init__(self, parent):
@@ -85,9 +89,12 @@ class guideWindow(wx.Frame):
             parent_position_x, parent_position_y = parent.GetPosition()
 
             if parent_display_w < parent_position_x:
-                self.SetPosition((int(parent_display_w+(guide_display_w/2)),int(guide_display_h / 2)))
+                self.SetPosition(
+                    (int(parent_display_w + (guide_display_w / 2)), int(guide_display_h / 2)))
             else:
-                self.SetPosition((int(guide_display_w / 2),int(guide_display_h / 2)))
+                self.SetPosition(
+                    (int(guide_display_w / 2), int(guide_display_h / 2)))
+
 
 def main():
     app = wx.App()
@@ -97,6 +104,7 @@ def main():
     main_window.Show()
     app.MainLoop()
 
-#main関数呼び出し
+
+# main関数呼び出し
 if __name__ == "__main__":
     main()
