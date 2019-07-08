@@ -43,14 +43,21 @@ class Player():
         self.name = name
         self.on_game = True
         self.cards = []
+        self.pred_cards = []
 
     def set_card(self, card, card_position):
         self.cards.insert(card_position + 1, card)
 
+    def set_pred_card(self, card, card_position):
+        self.cards.insert(card_position + 1, card)
+
+    def isnot_card(self, card, )
+        self.pred_cards.
+
     def card_open(self, card_position, card_num):
         self.cards[card_position].open = True
         self.cards[card_position].num = card_num
-    
+
     def game_over(self):
         self.on_game = False
 
@@ -69,3 +76,4 @@ class Game():
 
     def attack(self):
         target = input("Target number : ")
+
