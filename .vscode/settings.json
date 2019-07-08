@@ -1,4 +1,12 @@
 {
-    "git.ignoreLimitWarning": false,
-    "python.pythonPath": "C:\\Users\\a1514\\AppData\\Local\\Programs\\Python\\Python37-32\\python.exe"
+  "git.autofetch": true,
+  "terminal.integrated.shell.windows": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+  "python.linting.pylintArgs": ["--extension-pkg-whitelist=wx,cv2"],
+  "sync.gist": "458bc1942f012a70d82495240fd69a19",
+  "python.pythonPath": "C:\\Users\\a1514\\AppData\\Local\\Programs\\Python\\Python37-32\\python.exe",
+  "workbench.iconTheme": "vscode-icons",
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+  "python.linting.flake8Args": ["--ignore=E501"],
+  "editor.formatOnSave": true
 }
