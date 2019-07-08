@@ -3,7 +3,6 @@
   "C_Cpp.updateChannel": "Insiders",
   "python.linting.pylintArgs": ["--extension-pkg-whitelist=wx,cv2"],
   "git.ignoreLimitWarning": false,
-  "python.pythonPath": "C:\\Users\\a1514\\AppData\\Local\\Programs\\Python\\Python37-32\\python.exe",
   "python.linting.pylintEnabled": false,
   "python.linting.flake8Enabled": true,
   "python.linting.flake8Args": ["--ignore=E501"],
