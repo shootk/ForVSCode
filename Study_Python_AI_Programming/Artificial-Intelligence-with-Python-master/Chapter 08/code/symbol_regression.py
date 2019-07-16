@@ -1,6 +1,7 @@
 import operator
 import math
 import random
+import matplotlib.pyplot as plt
 
 import numpy as np
 from deap import algorithms, base, creator, tools, gp
@@ -93,3 +94,15 @@ if __name__ == "__main__":
     population, log = algorithms.eaSimple(population, toolbox,
                                           probab_crossover, probab_mutate, num_generations,
                                           stats=mstats, halloffame=hall_of_fame, verbose=True)
+
+    print(hall_of_fame[0])
+
+    f = toolbox.compile(expr=hall_of_fame[0])
+    xs = [x / 10.0 for x in range(-20, 20)]
+    ys = [f(x) for x in xs]
+    ts = [2 * x**3 - 3 * x**2 + 4 * x - 1 for x in xs]
+    plt.figure()
+    plt.plot(xs, ys)
+    plt.plot(xs, ts)
+    plt.grid(True)
+    plt.show()
