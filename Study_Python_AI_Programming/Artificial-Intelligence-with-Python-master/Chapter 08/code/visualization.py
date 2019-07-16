@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from deap import algorithms, base, benchmarks, \
-        cma, creator, tools
+    cma, creator, tools
 
 # Function to create a toolbox
+
+
 def create_toolbox(strategy):
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMin)
@@ -19,14 +21,15 @@ def create_toolbox(strategy):
 
     return toolbox
 
+
 if __name__ == "__main__":
     # Problem size
     num_individuals = 10
     num_generations = 125
 
     # Create a strategy using CMA-ES algorithm
-    strategy = cma.Strategy(centroid=[5.0]*num_individuals, sigma=5.0, 
-            lambda_=20*num_individuals)
+    strategy = cma.Strategy(centroid=[5.0]*num_individuals, sigma=5.0,
+                            lambda_=20*num_individuals)
 
     # Create toolbox based on the above strategy
     toolbox = create_toolbox(strategy)
@@ -43,12 +46,12 @@ if __name__ == "__main__":
 
     logbook = tools.Logbook()
     logbook.header = "gen", "evals", "std", "min", "avg", "max"
-    
+
     # Objects that will compile the data
     sigma = np.ndarray((num_generations, 1))
     axis_ratio = np.ndarray((num_generations, 1))
     diagD = np.ndarray((num_generations, num_individuals))
-    fbest = np.ndarray((num_generations,1))
+    fbest = np.ndarray((num_generations, 1))
     best = np.ndarray((num_generations, num_individuals))
     std = np.ndarray((num_generations, num_individuals))
 
@@ -60,19 +63,19 @@ if __name__ == "__main__":
         fitnesses = toolbox.map(toolbox.evaluate, population)
         for ind, fit in zip(population, fitnesses):
             ind.fitness.values = fit
-        
+
         # Update the strategy with the evaluated individuals
         toolbox.update(population)
-        
+
         # Update the hall of fame and the statistics with the
         # currently evaluated population
         hall_of_fame.update(population)
         record = stats.compile(population)
         logbook.record(evals=len(population), gen=gen, **record)
-        
+
         print(logbook.stream)
-        
-        # Save more data along the evolution 
+
+        # Save more data along the evolution
         sigma[gen] = strategy.sigma
         axis_ratio[gen] = max(strategy.diagD)**2/min(strategy.diagD)**2
         diagD[gen, :num_individuals] = strategy.diagD**2
@@ -107,6 +110,5 @@ if __name__ == "__main__":
     plt.semilogy(x, std)
     plt.grid(True)
     plt.title("Standard Deviations in All Coordinates")
-    
-    plt.show()
 
+    plt.show()
