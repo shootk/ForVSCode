@@ -1,9 +1,6 @@
 import gym
 import numpy as np
 
-env = gym.make('MountainCar-v0')
-observation = env.reset()
-
 
 def get_status(_observation):
     env_low = env.observation_space.low  # 位置と速度の最小値
@@ -45,6 +42,11 @@ def get_action(_env, _q_table, _observation, _episode):
     return _action
 
 
+def get_demo_action(_env, _q_table, _observation, _episode):
+    position, velocity = get_status(observation)
+    return np.argmax(_q_table[position][velocity])
+
+
 if __name__ == '__main__':
 
     env = gym.make('MountainCar-v0')
@@ -52,12 +54,9 @@ if __name__ == '__main__':
     # Qテーブルの初期化
     q_table = np.zeros((40, 40, 3))
 
-    observation = env.reset()
     rewards = []
-
     # 10000エピソードで学習する
     for episode in range(10000):
-
         total_reward = 0
         observation = env.reset()
 
@@ -65,7 +64,6 @@ if __name__ == '__main__':
 
             # ε-グリーディ法で行動を選択
             action = get_action(env, q_table, observation, episode)
-
             # 車を動かし、観測結果・報酬・ゲーム終了FLG・詳細情報を取得
             next_observation, reward, done, _ = env.step(action)
 
@@ -83,3 +81,13 @@ if __name__ == '__main__':
                         episode, total_reward))
                 rewards.append(total_reward)
                 break
+
+    env_demo = gym.make('MountainCar-v0')
+    env_demo.reset()
+    observation = env.reset()
+    for _ in range(200):
+        env.render()
+        next_observation, reward, done, _ = env_demo.step(action)
+        observation = next_observation
+        action = get_demo_action(env_demo, q_table, observation, episode)
+        env.step(action)
