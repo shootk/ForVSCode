@@ -7,6 +7,8 @@ import numpy as np
 import os
 import serial
 import serial.tools.list_ports
+import bluetooth
+import concurrent.futures
 
 
 class WebcamPanel(wx.Panel):
@@ -94,6 +96,11 @@ class guideWindow(wx.Frame):
             else:
                 self.SetPosition(
                     (int(guide_display_w / 2), int(guide_display_h / 2)))
+
+
+class MyThread(concurrent.futures.ProcessPoolExecutor):
+    def __init__(self):
+        super.(MyThread, self).__init__()
 
 
 def main():
