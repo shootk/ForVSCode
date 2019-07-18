@@ -1,5 +1,8 @@
 import gym
 import numpy as np
+from gym import wrappers
+import matplotlib.pyplot as plt
+from time import sleep
 
 
 def get_status(_observation):
@@ -14,18 +17,15 @@ def get_status(_observation):
 
 def update_q_table(_q_table, _action, _observation, _next_observation, _reward, _episode):
 
-    alpha = 0.2  # 学習率
-    gamma = 0.99  # 時間割引き率
+    alpha = 0.1  # 学習率
+    gamma = 0.9  # 時間割引き率
 
-    # 行動後の状態で得られる最大行動価値 Q(s',a')
     next_position, next_velocity = get_status(_next_observation)
     next_max_q_value = max(_q_table[next_position][next_velocity])
 
-    # 行動前の状態の行動価値 Q(s,a)
     position, velocity = get_status(_observation)
     q_value = _q_table[position][velocity][_action]
 
-    # 行動価値関数の更新
     _q_table[position][velocity][_action] = q_value + \
         alpha * (_reward + gamma * next_max_q_value - q_value)
 
@@ -33,7 +33,8 @@ def update_q_table(_q_table, _action, _observation, _next_observation, _reward, 
 
 
 def get_action(_env, _q_table, _observation, _episode):
-    epsilon = 0.002
+    epsilon = 0.01
+    np.random.seed(10)
     if np.random.uniform(0, 1) > epsilon:
         position, velocity = get_status(observation)
         _action = np.argmax(_q_table[position][velocity])
@@ -50,12 +51,11 @@ def get_demo_action(_env, _q_table, _observation, _episode):
 if __name__ == '__main__':
 
     env = gym.make('MountainCar-v0')
+    env.reset()
 
-    # Qテーブルの初期化
     q_table = np.zeros((40, 40, 3))
 
     rewards = []
-    # 10000エピソードで学習する
     for episode in range(10000):
         total_reward = 0
         observation = env.reset()
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
             # ε-グリーディ法で行動を選択
             action = get_action(env, q_table, observation, episode)
-            # 車を動かし、観測結果・報酬・ゲーム終了FLG・詳細情報を取得
+
             next_observation, reward, done, _ = env.step(action)
 
             # Qテーブルの更新
@@ -81,13 +81,25 @@ if __name__ == '__main__':
                         episode, total_reward))
                 rewards.append(total_reward)
                 break
-
-    env_demo = gym.make('MountainCar-v0')
-    env_demo.reset()
+    print(rewards.index(max(rewards)), max(rewards))
+    env_demo = env
     observation = env.reset()
+    env.render()
+    sleep(10)
     for _ in range(200):
-        env.render()
         next_observation, reward, done, _ = env_demo.step(action)
         observation = next_observation
         action = get_demo_action(env_demo, q_table, observation, episode)
         env.step(action)
+        env.render()
+        if done:
+            break
+    env.close()
+    env_demo.close()
+
+    plt.figure()
+    plt.xlabel("Episode")
+    plt.ylabel("TotalReward")
+    plt.grid(True)
+    plt.plot(rewards)
+    plt.show()
