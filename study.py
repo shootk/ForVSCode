@@ -100,7 +100,7 @@ class guideWindow(wx.Frame):
 
 class MyThread(concurrent.futures.ProcessPoolExecutor):
     def __init__(self):
-        super.(MyThread, self).__init__()
+        super().__init__()
 
 
 def main():
