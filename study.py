@@ -11,6 +11,11 @@ import bluetooth
 import concurrent.futures
 
 
+class MyThread(concurrent.futures.ProcessPoolExecutor):
+    def __init__(self):
+        super(MyThread, self).__init__()
+
+
 class WebcamPanel(wx.Panel):
     def __init__(self, parent, camera, fps=10):  # fps15くらいが目安
 
@@ -98,14 +103,8 @@ class guideWindow(wx.Frame):
                     (int(guide_display_w / 2), int(guide_display_h / 2)))
 
 
-class MyThread(concurrent.futures.ProcessPoolExecutor):
-    def __init__(self):
-        super().__init__()
-
-
 def main():
     app = wx.App()
-
     camera = cv2.VideoCapture(0)
     main_window = MainWindow(camera)
     main_window.Show()
