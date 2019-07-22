@@ -17,11 +17,10 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
 
 
 class WebcamPanel(wx.Panel):
-    def __init__(self, parent, camera, fps=10):  # fps15くらいが目安
-
+    def __init__(self, parent, fps=10):  # fps15くらいが目安
         wx.Panel.__init__(self, parent)
 
-        self.camera = camera
+        self.camera = cv2.VideoCapture(0)
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
 
@@ -49,14 +48,14 @@ class WebcamPanel(wx.Panel):
 
 
 class MainWindow(wx.Frame):
-    def __init__(self, camera):
+    def __init__(self):
 
         # inheritence
         wx.Frame.__init__(self, None)
         self.Title = "webcam"
 
         # main ui
-        self.webcampanel = WebcamPanel(self, camera)
+        self.webcampanel = WebcamPanel(self)
 
         main_window_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -105,8 +104,7 @@ class guideWindow(wx.Frame):
 
 def main():
     app = wx.App()
-    camera = cv2.VideoCapture(0)
-    main_window = MainWindow(camera)
+    main_window = MainWindow()
     main_window.Show()
     app.MainLoop()
 
