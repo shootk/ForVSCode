@@ -1,12 +1,8 @@
 import wx
-import wx.lib.newevent
-import threading
 import cv2
 import time
 import numpy as np
-import os
-import serial
-import serial.tools.list_ports
+from guide_module import guide
 import bluetooth
 import concurrent.futures
 
@@ -17,11 +13,9 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
 
 
 class WebcamPanel(wx.Panel):
-    def __init__(self, parent, fps=10):  # fps15くらいが目安
+    def __init__(self, parent, frame):  # fps15くらいが目安
         wx.Panel.__init__(self, parent)
 
-        self.camera = cv2.VideoCapture(0)
-        return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -29,22 +23,13 @@ class WebcamPanel(wx.Panel):
 
         self.SetSize((width, height))
 
-        self.timer = wx.Timer(self)
-        self.timer.Start(1000. / fps)
-
         self.Bind(wx.EVT_PAINT, self.OnPaint)
-        self.Bind(wx.EVT_TIMER, self.NextFrame)
+        self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
+        self.Bind(wx.EVT_LEFT_UP, parent.MouseUp)
 
     def OnPaint(self, e):
         dc = wx.BufferedPaintDC(self)
         dc.DrawBitmap(self.bmp, 0, 0)
-
-    def NextFrame(self, e):
-        return_value, frame = self.camera.read()
-        if return_value:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            self.bmp.CopyFromBuffer(frame)
-            self.Refresh()
 
 
 class MainWindow(wx.Frame):
@@ -53,34 +38,71 @@ class MainWindow(wx.Frame):
         # inheritence
         wx.Frame.__init__(self, None)
         self.Title = "webcam"
-
         # main ui
-        self.webcampanel = WebcamPanel(self)
+        self.camera = cv2.VideoCapture(0)
+        return_value, frame = self.camera.read()
 
+        self.webcampanel = WebcamPanel(self, frame)
+        self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
         main_window_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.do_calibrate = False
 
         main_window_sizer.Add(self.webcampanel, 7,
                               wx.CENTER | wx.BOTTOM | wx.EXPAND, 1)
         main_window_sizer.SetItemMinSize(self.webcampanel, (640, 480))
+        main_window_sizer.Add(self.calibration_button, 1,
+                              wx.CENTER | wx.BOTTOM | wx.EXPAND)
 
         self.SetSizer(main_window_sizer)
         main_window_sizer.Fit(self)
+
+        self.timer = wx.Timer(self)
+        self.timer.Start(1000. / 10)
+
+        self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
+        self.Bind(wx.EVT_BUTTON, self.Calibration)
+
         guide_window = guideWindow(self)
         guide_window.Show()
+
+    def WebcamPanelNextFrame(self, e):
+        return_value, frame = self.camera.read()
+        if return_value:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            self.webcampanel.bmp.CopyFromBuffer(frame)
+        self.webcampanel.Refresh()
+
+    def Calibration(self, e):
+        self.do_calibrate = not self.do_calibrate
+
+    def MouseDown(self, e):
+        if self.do_calibrate:
+            self.src_pt = [e.X, e.Y]
+
+    def MouseUp(self, e):
+        if self.do_calibrate:
+            self.dst_pt = [e.X, e.Y]
 
 
 class guidePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
+        self.figure_guide = guide.FigureGuide()
+        self.guide_image = np.zeros((640, 480), dtype=np.uint8)
+
+    def set_guide(self, line):
+        self.figure_guide.set_line(line.start, line.end)
+
+    def redraw(self):
+        self.figure_guide.draw_guide(self.guide_image)
 
 
 class guideWindow(wx.Frame):
     def __init__(self, parent):
-
         wx.Frame.__init__(self, parent)
+        self.Maximize()
         self.guide_panel = guidePanel(self)
         self.switch_window(parent)
-        self.Maximize()
 
     def switch_window(self, parent):
         if wx.Display.GetCount() == 2:
@@ -94,9 +116,9 @@ class guideWindow(wx.Frame):
 
             parent_position_x, parent_position_y = parent.GetPosition()
 
-            if parent_display_w < parent_position_x:
+            if parent_display_w > parent_position_x:
                 self.SetPosition(
-                    (int(parent_display_w + (guide_display_w / 2)), int(guide_display_h / 2)))
+                    (int(parent_display_w - (guide_display_w / 2)), int(guide_display_h / 2)))
             else:
                 self.SetPosition(
                     (int(guide_display_w / 2), int(guide_display_h / 2)))
