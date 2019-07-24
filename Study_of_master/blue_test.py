@@ -37,5 +37,6 @@ if __name__ == '__main__':
 
     w_data = b'RV\n'
     r_size = 7
-    r_data = uart_write_read(w_data, r_size)
-    print('Reserved: {}'.format(r_data))
+    while True:
+        r_data = uart_write_read(w_data, r_size)
+        print('Reserved: {}'.format(r_data))
