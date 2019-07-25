@@ -3,7 +3,6 @@ import cv2
 import time
 import numpy as np
 from guide_module import guide
-import bluetooth
 import concurrent.futures
 
 
@@ -37,16 +36,19 @@ class MainWindow(wx.Frame):
 
         # inheritence
         wx.Frame.__init__(self, None)
-        self.Title = "webcam"
+
         # main ui
+        self.Title = "webcam"
         self.camera = cv2.VideoCapture(0)
         return_value, frame = self.camera.read()
-
         self.webcampanel = WebcamPanel(self, frame)
-        self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
-        main_window_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.do_calibrate = False
 
+        self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
+        self.do_calibrate = False
+        self.calibrate_points = np.float32(
+            [[0, 0], [640, 0], [0, 480], [640, 480]])
+
+        main_window_sizer = wx.BoxSizer(wx.VERTICAL)
         main_window_sizer.Add(self.webcampanel, 7,
                               wx.CENTER | wx.BOTTOM | wx.EXPAND, 1)
         main_window_sizer.SetItemMinSize(self.webcampanel, (640, 480))
@@ -82,6 +84,17 @@ class MainWindow(wx.Frame):
     def MouseUp(self, e):
         if self.do_calibrate:
             self.dst_pt = [e.X, e.Y]
+            self.calibrate()
+
+    def calibrate(self):
+        src_pts = np.float32(
+            [self.src_pt, self.src_pt, self.src_pt, self.src_pt])
+        check_array = self.calibrate_points - src_pts
+        distance = np.sum(np.square(check_array), axis=1)
+        min_index = np.argmin(distance)
+        self.calibrate_points[min_index] = self.dst_pt
+        print(self.calibrate_points)
+        cv2.line()
 
 
 class guidePanel(wx.Panel):
@@ -109,19 +122,19 @@ class guideWindow(wx.Frame):
             self.parent_display_index = wx.Display.GetFromWindow(parent)
             self.display_index = (self.parent_display_index + 1) % 2
 
-            parent_display = wx.Display(self.parent_display_index)
-            _, _, parent_display_w, parent_display_h = parent_display.GetGeometry()
-            guide_display = wx.Display(self.display_index)
-            _, _, guide_display_w, guide_display_h = guide_display.GetGeometry()
+            self.parent_display = wx.Display(self.parent_display_index)
+            _, _, parent_display_w, parent_display_h = self.parent_display.GetGeometry()
+            self.guide_display = wx.Display(self.display_index)
+            _, _, self.guide_display_w, self.guide_display_h = self.guide_display.GetGeometry()
 
             parent_position_x, parent_position_y = parent.GetPosition()
 
             if parent_display_w > parent_position_x:
                 self.SetPosition(
-                    (int(parent_display_w - (guide_display_w / 2)), int(guide_display_h / 2)))
+                    (int(parent_display_w - (self.guide_display_w / 2)), int(self.guide_display_h / 2)))
             else:
                 self.SetPosition(
-                    (int(guide_display_w / 2), int(guide_display_h / 2)))
+                    (int(self.guide_display_w / 2), int(self.guide_display_h / 2)))
 
 
 def main():

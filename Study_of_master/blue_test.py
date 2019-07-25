@@ -20,7 +20,7 @@ def search_com_port():
     for com in coms:
         comlist.append(com.device)
     print('Connected COM ports: ' + str(comlist))
-    use_port = comlist[0]
+    use_port = comlist[1]
     print('Use COM port: ' + use_port)
 
     return use_port
@@ -36,7 +36,6 @@ if __name__ == '__main__':
     ser.timeout = 5  # sec
 
     w_data = b'RV\n'
-    r_size = 7
-    while True:
-        r_data = uart_write_read(w_data, r_size)
-        print('Reserved: {}'.format(r_data))
+    r_size = 100
+    r_data = uart_write_read(w_data, r_size)
+    print('Reserved: {}'.format(r_data))
