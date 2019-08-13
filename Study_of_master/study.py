@@ -1,6 +1,6 @@
 import wx
 import cv2
-import time
+# import time
 import numpy as np
 from guide_module import guide
 import concurrent.futures
