@@ -117,9 +117,7 @@ print("保存完了しました")  # 確認
 
 
 # OpenCVのデフォルトの分類器のpath。(https://github.com/opencv/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xmlのファイルを使う)
-cascade_path = '　自分のhaarcascade_frontalface_default.xmlのパスを入力'
-# 例
-#cascade_path = './opencv-master/data/haarcascades/haarcascade_frontalface_default.xml'
+cascade_path = '/Users/a1514/OneDrive/Desctop/VSCode Making and Studying/opencv-master/data/haarcascades/haarcascade_frontalface_default.xml'
 faceCascade = cv2.CascadeClassifier(cascade_path)
 
 for name in SearchName:
