@@ -88,11 +88,11 @@ class MainWindow(wx.Frame):
         else:
             self.calibration_button.SetBackgroundColour('#ffffff')
 
-    def MouseDown(self, e):
+    def MouseDown(self, e):  # マウスが押されたらその地点の座標を取得
         if self.do_calibrate:
             self.src_pt = [e.X, e.Y]
 
-    def MouseUp(self, e):
+    def MouseUp(self, e):  # マウスが離されたらその座標を取得
         if self.do_calibrate:
             self.dst_pt = [e.X, e.Y]
             self.calibrate()
