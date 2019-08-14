@@ -34,48 +34,59 @@ class WebcamPanel(wx.Panel):
 class MainWindow(wx.Frame):
     def __init__(self):
 
-        # inheritence
+        # 継承
         wx.Frame.__init__(self, None)
 
         # main ui
         self.Title = "webcam"
+
+        # カメラ
         self.camera = cv2.VideoCapture(0)
         return_value, frame = self.camera.read()
+
+        # カメラパネル
         self.webcampanel = WebcamPanel(self, frame)
 
+        # キャリブレーションボタン配置，キャリブレーション設定
         self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
         self.do_calibrate = False
         self.calibrate_points = np.float32(
             [[0, 0], [640, 0], [0, 480], [640, 480]])
-
+        # メインウィンドウのサイズ感決定，パネル，ボタン配置
         main_window_sizer = wx.BoxSizer(wx.VERTICAL)
         main_window_sizer.Add(self.webcampanel, 7,
                               wx.CENTER | wx.BOTTOM | wx.EXPAND, 1)
         main_window_sizer.SetItemMinSize(self.webcampanel, (640, 480))
         main_window_sizer.Add(self.calibration_button, 1,
                               wx.CENTER | wx.BOTTOM | wx.EXPAND)
-
-        self.SetSizer(main_window_sizer)
+        # サイズを合わせる
         main_window_sizer.Fit(self)
+        self.SetSizer(main_window_sizer)
 
+        # カメラの画像を再描画する関数を呼び出す間隔を設定
         self.timer = wx.Timer(self)
         self.timer.Start(1000. / 10)
 
         self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
         self.Bind(wx.EVT_BUTTON, self.Calibration)
 
+        # ガイドを表示するウィンドウを作成，表示
         guide_window = guideWindow(self)
         guide_window.Show()
 
-    def WebcamPanelNextFrame(self, e):
+    def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
         return_value, frame = self.camera.read()
         if return_value:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.webcampanel.bmp.CopyFromBuffer(frame)
         self.webcampanel.Refresh()
 
-    def Calibration(self, e):
+    def Calibration(self, e):  # キャリブレーション状態切替
         self.do_calibrate = not self.do_calibrate
+        if self.do_calibrate:
+            self.calibration_button.SetBackgroundColour('#6fbbee')
+        else:
+            self.calibration_button.SetBackgroundColour('#ffffff')
 
     def MouseDown(self, e):
         if self.do_calibrate:
