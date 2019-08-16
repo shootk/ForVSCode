@@ -39,10 +39,10 @@ class MainWindow(wx.Frame):
 
         # カメラ
         self.camera = cv2.VideoCapture(0)
-        return_value, self.frame = self.camera.read()
-        height, width = self.frame.shape[:2]
+        return_value, frame = self.camera.read()
+        height, width = frame.shape[:2]
         # カメラパネル
-        self.webcampanel = WebcamPanel(self, self.frame)
+        self.webcampanel = WebcamPanel(self, frame)
 
         # ボタン配置，キャリブレーション設定
         self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
@@ -97,13 +97,13 @@ class MainWindow(wx.Frame):
         guide_window.Show()
 
     def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
-        return_value, self.frame = self.camera.read()
-        for i in range(len(self.calibrate_points)):
-            cv2.line(
-                self.frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (0, 255, 0))
+        return_value, frame = self.camera.read()
         if return_value:
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-            self.webcampanel.bmp.CopyFromBuffer(self.frame)
+            for i in range(len(self.calibrate_points)):
+                cv2.line(
+                    frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (0, 255, 0))
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            self.webcampanel.bmp.CopyFromBuffer(frame)
         self.webcampanel.Refresh()
 
     def CalibStateChange(self, e):  # キャリブレーション状態切替
@@ -155,8 +155,13 @@ class MainWindow(wx.Frame):
             self.calibrate()
 
         elif self.do_color_set:
-            self.choke_color = tuple(self.frame[e.Y, e.X])
-            self.color_set_button.SetBackgroundColour(self.choke_color)
+            return_value, frame = self.camera.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            if return_value:
+                hsvframe = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+                self.choke_color = tuple(hsvframe[e.Y, e.X])
+                self.color_set_button.SetBackgroundColour(
+                    tuple(frame[e.Y, e.X]))
 
     def calibrate(self):
         # マウスが押された点を要素とする長さ4の配列
@@ -177,9 +182,11 @@ class guidePanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.figure_guide = guide.FigureGuide()
         self.guide_image = np.zeros((640, 480), dtype=np.uint8)
+        self.set_guide(guide.Line(guide.Point(50, 50), guide.Point(200, 200)))
+        # self.redraw()
 
     def set_guide(self, line):
-        self.figure_guide.set_line(line.start, line.end)
+        self.figure_guide.set_line(line)
 
     def redraw(self):
         self.figure_guide.draw_guide(self.guide_image)
