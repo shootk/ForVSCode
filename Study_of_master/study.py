@@ -2,7 +2,7 @@ import wx
 import cv2
 # import time
 import numpy as np
-from guide_module import guide
+from guidemodule import guide
 import concurrent.futures
 
 
@@ -33,32 +33,56 @@ class WebcamPanel(wx.Panel):
 
 class MainWindow(wx.Frame):
     def __init__(self):
-
         # 継承
         wx.Frame.__init__(self, None)
-
-        # main ui
         self.Title = "webcam"
 
         # カメラ
         self.camera = cv2.VideoCapture(0)
-        return_value, frame = self.camera.read()
-
+        return_value, self.frame = self.camera.read()
+        height, width = self.frame.shape[:2]
         # カメラパネル
-        self.webcampanel = WebcamPanel(self, frame)
+        self.webcampanel = WebcamPanel(self, self.frame)
 
-        # キャリブレーションボタン配置，キャリブレーション設定
+        # ボタン配置，キャリブレーション設定
         self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
         self.do_calibrate = False
         self.calibrate_points = np.float32(
-            [[0, 0], [640, 0], [0, 480], [640, 480]])
+            [(0, 0), (width - 1, 0), (width - 1, height - 1), (0, height - 1)])
+        self.calibration_button.Bind(wx.EVT_BUTTON, self.CalibStateChange)
+        self.calibration_button.SetBackgroundColour('#ffffff')
+
+        self.color_set_button = wx.Button(self, wx.ID_ANY, 'チョーク色取得')
+        self.do_color_set = False
+        self.choke_color = (255, 255, 255)
+        self.color_set_button.Bind(wx.EVT_BUTTON, self.SetColorStateChange)
+        self.color_set_button.SetBackgroundColour('#ffffff')
+
+        self.cancel_button = wx.Button(self, wx.ID_ANY, 'CANCEL')
+        self.cancel_button.SetBackgroundColour('#ffffff')
+        self.cancel_button.Disable()
+        self.cancel_button.Bind(wx.EVT_BUTTON, self.SelectChange)
+
+        self.ok_button = wx.Button(self, wx.ID_ANY, 'OK')
+        self.ok_button.SetBackgroundColour('#ffffff')
+        self.ok_button.Bind(wx.EVT_BUTTON, self.SelectChange)
+
+        self.selection = False
+
+        button_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_box_sizer.Add(self.cancel_button, 1, wx.EXPAND)
+        button_box_sizer.Add(self.calibration_button,
+                             2, wx.BOTTOM | wx.EXPAND)
+        button_box_sizer.Add(self.color_set_button,
+                             2, wx.BOTTOM | wx.EXPAND)
+        button_box_sizer.Add(self.ok_button, 1, wx.EXPAND)
+
         # メインウィンドウのサイズ感決定，パネル，ボタン配置
         main_window_sizer = wx.BoxSizer(wx.VERTICAL)
         main_window_sizer.Add(self.webcampanel, 7,
                               wx.CENTER | wx.BOTTOM | wx.EXPAND, 1)
         main_window_sizer.SetItemMinSize(self.webcampanel, (640, 480))
-        main_window_sizer.Add(self.calibration_button, 1,
-                              wx.CENTER | wx.BOTTOM | wx.EXPAND)
+        main_window_sizer.Add(button_box_sizer, 1, wx.BOTTOM | wx.EXPAND)
         # サイズを合わせる
         main_window_sizer.Fit(self)
         self.SetSizer(main_window_sizer)
@@ -66,46 +90,86 @@ class MainWindow(wx.Frame):
         # カメラの画像を再描画する関数を呼び出す間隔を設定
         self.timer = wx.Timer(self)
         self.timer.Start(1000. / 10)
-
         self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
-        self.Bind(wx.EVT_BUTTON, self.Calibration)
 
         # ガイドを表示するウィンドウを作成，表示
         guide_window = guideWindow(self)
         guide_window.Show()
 
     def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
-        return_value, frame = self.camera.read()
+        return_value, self.frame = self.camera.read()
+        for i in range(len(self.calibrate_points)):
+            cv2.line(
+                self.frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (0, 255, 0))
         if return_value:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            self.webcampanel.bmp.CopyFromBuffer(frame)
+            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+            self.webcampanel.bmp.CopyFromBuffer(self.frame)
         self.webcampanel.Refresh()
 
-    def Calibration(self, e):  # キャリブレーション状態切替
+    def CalibStateChange(self, e):  # キャリブレーション状態切替
         self.do_calibrate = not self.do_calibrate
+        self.do_color_set = False
+        self.color_set_button.SetBackgroundColour('#ffffff')
         if self.do_calibrate:
             self.calibration_button.SetBackgroundColour('#6fbbee')
         else:
             self.calibration_button.SetBackgroundColour('#ffffff')
 
+    def SetColorStateChange(self, e):  # チョーク色取得状態切替
+        self.do_color_set = not self.do_color_set
+        self.do_calibrate = False
+        self.calibration_button.SetBackgroundColour('#ffffff')
+        if self.do_color_set:
+            self.color_set_button.SetBackgroundColour('#edc26a')
+        else:
+            self.color_set_button.SetBackgroundColour('#ffffff')
+
+    def SelectChange(self, e):
+        self.selection = not self.selection
+        if self.selection:
+            self.ok_button.SetBackgroundColour('#74e69d')
+            self.calibration_button.SetBackgroundColour('#ffffff')
+            self.do_calibrate = False
+            self.color_set_button.SetBackgroundColour('#ffffff')
+            self.do_color_set = False
+
+            self.ok_button.Disable()
+            self.color_set_button.Disable()
+            self.calibration_button.Disable()
+            self.cancel_button.Enable()
+
+        else:
+            self.ok_button.SetBackgroundColour('#ffffff')
+            self.ok_button.Enable()
+            self.color_set_button.Enable()
+            self.calibration_button.Enable()
+            self.cancel_button.Disable()
+
     def MouseDown(self, e):  # マウスが押されたらその地点の座標を取得
         if self.do_calibrate:
-            self.src_pt = [e.X, e.Y]
+            self.src_pt = (e.X, e.Y)
 
     def MouseUp(self, e):  # マウスが離されたらその座標を取得
         if self.do_calibrate:
-            self.dst_pt = [e.X, e.Y]
+            self.dst_pt = (e.X, e.Y)
             self.calibrate()
 
+        elif self.do_color_set:
+            self.choke_color = tuple(self.frame[e.Y, e.X])
+            self.color_set_button.SetBackgroundColour(self.choke_color)
+
     def calibrate(self):
+        # マウスが押された点を要素とする長さ4の配列
         src_pts = np.float32(
             [self.src_pt, self.src_pt, self.src_pt, self.src_pt])
+        # 現在の検出範囲4点のx,y座標とマウスが押されたx,y座標との差
         check_array = self.calibrate_points - src_pts
+        # chack_arrayで求めたx,y座標からマウスが押された点と検出範囲の4角との距離を計算
         distance = np.sum(np.square(check_array), axis=1)
+        # 一番短い距離となった配列番号を取得
         min_index = np.argmin(distance)
+        # 上で求めた配列番号の点をマウスが離された点に変更
         self.calibrate_points[min_index] = self.dst_pt
-        print(self.calibrate_points)
-        cv2.line()
 
 
 class guidePanel(wx.Panel):
