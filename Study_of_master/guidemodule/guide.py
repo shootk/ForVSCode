@@ -4,18 +4,21 @@ import cv2
 
 class Point():
     def __init__(self, x=0, y=0):
-        self.X = x
-        self.Y = y
+        self.X = int(x)
+        self.Y = int(y)
 
     def change_coordinate(self, x, y):
-        self.X = x
-        self.Y = y
+        self.X = int(x)
+        self.Y = int(y)
 
 
 class Circle():
     def __init__(self, center=Point(0, 0), radius=10):
         self.center = center
-        self.radius = radius
+        self.radius = int(radius)
+
+    def get_center(self):
+        return (self.center.X, self.center.Y)
 
 
 class Line():
@@ -55,10 +58,10 @@ class Line():
         self.angle_deg = math.degrees(self.angle_rad)
 
     def get_start(self):
-        return tuple(self.start.X, self.start.Y)
+        return (self.start.X, self.start.Y)
 
     def get_end(self):
-        return tuple(self.end.X, self.end.Y)
+        return (self.end.X, self.end.Y)
 
 
 class FigureGuide():
@@ -79,12 +82,11 @@ class FigureGuide():
         self.vertical_bisector.make_from_radian(
             self.line.middle_point,
             self.line.angle_rad + math.radians(90),
-            self.line.length * 3)
+            self.line.length)
 
         self.lines.append(self.vertical_bisector)
 
         self.vertical_line_1 = Line()
-
         self.vertical_line_1.make_from_radian(
             self.line.start,
             self.line.angle_rad + math.radians(90),
@@ -92,7 +94,6 @@ class FigureGuide():
         self.lines.append(self.vertical_line_1)
 
         self.vertical_line_2 = Line()
-
         self.vertical_line_2.make_from_radian(
             self.line.end,
             self.line.angle_rad + math.radians(90),
@@ -111,11 +112,13 @@ class FigureGuide():
 
     def draw_guide(self, img):
         for line in self.lines:
-            start = line.get_start
-            end = line.get_end
+            start = line.get_start()
+            end = line.get_end()
             img = cv2.line(img, start, end, (255, 255, 255), 2)
+            print(start, end)
 
         for circle in self.circles:
             center = (circle.center.X, circle.center.Y)
             radius = circle.radius
             img = cv2.circle(img, center, radius, (255, 255, 255), 2)
+            print(center, radius)
