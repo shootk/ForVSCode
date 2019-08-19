@@ -28,7 +28,7 @@ class Line():
         self.length = math.sqrt(
             (self.end.X - self.start.X) ** 2 + (self.end.Y - self.start.Y))
         self.middle_point = Point(
-            (self.end.X - self.start.X) / 2, (self.end.Y - self.start.Y) / 2)
+            (self.end.X + self.start.X) / 2, (self.end.Y + self.start.Y) / 2)
         self.angle_rad = math.atan2(
             self.end.Y - self.start.Y, self.end.X - self.start.X)
         self.angle_deg = math.degrees(self.angle_rad)
@@ -78,11 +78,13 @@ class FigureGuide():
         self.lines = []
         self.circles = []
 
+        self.lines.append(self.line)
+
         self.vertical_bisector = Line()
         self.vertical_bisector.make_from_radian(
             self.line.middle_point,
             self.line.angle_rad + math.radians(90),
-            self.line.length)
+            self.line.length * 3)
 
         self.lines.append(self.vertical_bisector)
 

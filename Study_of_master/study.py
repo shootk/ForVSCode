@@ -18,7 +18,7 @@ class WebcamPanel(wx.Panel):
         height, width = frame.shape[:2]
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        self.bmp = wx.Bitmap.FromBuffer(width, height, frame)
+        self.bmp = wx.BitmapFromBuffer(width, height, frame)
 
         self.SetSize((width, height))
 
@@ -36,6 +36,10 @@ class MainWindow(wx.Frame):
         # 継承
         wx.Frame.__init__(self, None)
         self.Title = "webcam"
+
+        # ガイドを表示するウィンドウを作成，表示
+        self.guide_window = guideWindow(self)
+        self.guide_window.Show()
 
         # カメラ
         self.camera = cv2.VideoCapture(0)
@@ -91,10 +95,6 @@ class MainWindow(wx.Frame):
         self.timer = wx.Timer(self)
         self.timer.Start(1000. / 10)
         self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
-
-        # ガイドを表示するウィンドウを作成，表示
-        guide_window = guideWindow(self)
-        guide_window.Show()
 
     def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
         return_value, frame = self.camera.read()
@@ -181,25 +181,36 @@ class guidePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         guide_display = wx.Display(parent.display_index)
-        _, _, guide_display_w, guide_display_h = guide_display.GetGeometry()
-        self.figure_guide = guide.FigureGuide(guide_display_w, guide_display_h)
-        self.guide_image = cv2.cvtColor(
-            np.zeros((guide_display_w, guide_display_h), dtype=np.uint8), cv2.COLOR_GRAY2RGB)
-        width, height = self.guide_image.shape[:2]
+        _, _, width, height = guide_display.GetGeometry()
+        self.figure_guide = guide.FigureGuide(width, height)
         self.SetSize(width, height)
-        self.figure_guide.draw_guide(self.guide_image)
-        self.bmp = wx.Bitmap.FromBuffer(width, height, self.guide_image)
-        wx.StaticBitmap(self, bitmap=self.bmp)
-        # self.redraw()
+        print(width, height)
+        self.bmp = wx.EmptyBitmap(width, height, -1)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
 
     def set_guide(self, line):
         self.figure_guide.set_line(line)
 
-    def redraw(self):
-        self.figure_guide.draw_guide(self.guide_image)
-        width, height = self.guide_image.shape[:2]
-        self.bmp = wx.BitmapFromBuffer(width, height, self.guide_image)
-        wx.StaticBitmap(self, bitmap=self.bmp)
+    def OnPaint(self, e):
+        dc = wx.BufferedPaintDC(self)
+        dc.SetBackground(wx.Brush('black'))
+        dc.Clear()
+        dc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 100),
+                             wx.BRUSHSTYLE_TRANSPARENT))
+        dc.SetPen(wx.Pen('white', 10, wx.PENSTYLE_DOT))
+        lines = self.figure_guide.lines
+        circles = self.figure_guide.circles
+        # Draw graphics.
+        for line in lines:
+            start = line.get_start()
+            end = line.get_end()
+            dc.DrawLine(start, end)
+            print(start, end)
+
+        for circle in circles:
+            center = (circle.center.X, circle.center.Y)
+            radius = circle.radius
+            dc.DrawCircle(center[0], center[1], radius)
 
 
 class guideWindow(wx.Frame):
@@ -208,6 +219,8 @@ class guideWindow(wx.Frame):
         self.Maximize(True)
         self.switch_window(parent)
         self.guide_panel = guidePanel(self)
+        self.guide_panel.Refresh()
+
         main_window_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_window_sizer.Add(self.guide_panel, 7,
                               wx.CENTER | wx.BOTTOM | wx.EXPAND, 1)
