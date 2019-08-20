@@ -3,6 +3,7 @@ import cv2
 # import time
 import numpy as np
 from guidemodule import guide
+from detectormodule import linedetector
 import concurrent.futures
 
 
@@ -40,10 +41,11 @@ class MainWindow(wx.Frame):
         # ガイドを表示するウィンドウを作成，表示
         self.guide_window = guideWindow(self)
         self.guide_window.Show()
-
+        self.line_detector = linedetector.LineDitector()
         # カメラ
         self.camera = cv2.VideoCapture(0)
         return_value, frame = self.camera.read()
+
         height, width = frame.shape[:2]
         # カメラパネル
         self.webcampanel = WebcamPanel(self, frame)
@@ -52,7 +54,7 @@ class MainWindow(wx.Frame):
         self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
         self.do_calibrate = False
         self.calibrate_points = np.float32(
-            [(0, 0), (width - 1, 0), (width - 1, height - 1), (0, height - 1)])
+            [(0, 0), (0, height - 1), (width - 1, height - 1), (width - 1, 0)])
         self.calibration_button.Bind(wx.EVT_BUTTON, self.CalibStateChange)
         self.calibration_button.SetBackgroundColour('#ffffff')
 
@@ -163,6 +165,18 @@ class MainWindow(wx.Frame):
                 self.color_set_button.SetBackgroundColour(
                     tuple(frame[e.Y, e.X]))
 
+        elif self.selection:
+            return_value, frame = self.camera.read()
+            guide_display = wx.Display(self.guide_window.display_index)
+            _, _, w, h = guide_display.GetGeometry()
+            src_pts = np.array(
+                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+            dst_pts = self.calibrate_points
+            mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
+            self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
+            self.line_detector.Queue(img=self.warp_frame)
+            self.line_ditecting()
+
     def calibrate(self):
         # マウスが押された点を要素とする長さ4の配列
         src_pts = np.float32(
@@ -175,6 +189,12 @@ class MainWindow(wx.Frame):
         min_index = np.argmin(distance)
         # 上で求めた配列番号の点をマウスが離された点に変更
         self.calibrate_points[min_index] = self.dst_pt
+
+    def line_ditecting(self):
+        self.line_detector.SetColor(self.choke_color)
+        detected_line = self.line_detector.DoDetecting
+        self.guide_window.guide_panel.set_guide(detected_line)
+        self.guide_window.guide_panel.Refresh()
 
 
 class guidePanel(wx.Panel):
@@ -205,7 +225,6 @@ class guidePanel(wx.Panel):
             start = line.get_start()
             end = line.get_end()
             dc.DrawLine(start, end)
-            print(start, end)
 
         for circle in circles:
             center = (circle.center.X, circle.center.Y)

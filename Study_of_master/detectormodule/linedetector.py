@@ -9,14 +9,18 @@ class LineDitector():
         self.before_drawline_image = np.zeros((width, height), dtype=np.uint8)
         self.after_drawline_image = np.zeros((width, height), dtype=np.uint8)
         self.detected_line = guide.Line()
-        self.ditect_low_white = color - (30, 30, 30)
-        self.ditect_high_white = color + (30, 30, 30)
+        self.ditect_low_white = (color[0] - 30, color[1] - 30, color[2] - 30)
+        self.ditect_high_white = (color[0] + 30, color[1] + 30, color[2] + 30)
 
     def SetSrcImage(self, img):
         self.before_drawline_image = img
 
     def SetDstImage(self, img):
         self.after_drawline_image = img
+
+    def SetColor(self, color):
+        self.ditect_low_white = (color[0] - 30, color[1] - 30, color[2] - 30)
+        self.ditect_high_white = (color[0] + 30, color[1] + 30, color[2] + 30)
 
     def Queue(self, img):
         self.before_drawline_image = self.after_drawline_image
@@ -50,6 +54,12 @@ class LineDitector():
                 max_line = line
         return max_line
 
-    def SetColor(self, color):
-        self.ditect_low_white = color - (30, 30, 30)
-        self.ditect_high_white = color + (30, 30, 30)
+    def DoDetecting(self):
+        diff = self.GetDifference(
+            self.before_drawline_image, self.after_drawline_image)
+        white = self.GetWhite(self.after_drawline_image)
+        same = self.GetSamePart(diff, white)
+        edge = self.DetectEdge(same)
+        lines = self.DetectLine(edge)
+        line = self.GetLongestLine(lines)
+        return line
