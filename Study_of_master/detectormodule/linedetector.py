@@ -9,8 +9,10 @@ class LineDitector():
         self.before_drawline_image = np.zeros((width, height), dtype=np.uint8)
         self.after_drawline_image = np.zeros((width, height), dtype=np.uint8)
         self.detected_line = guide.Line()
-        self.ditect_low_white = (color[0] - 30, color[1] - 30, color[2] - 30)
-        self.ditect_high_white = (color[0] + 30, color[1] + 30, color[2] + 30)
+        self.ditect_low_white = np.array([
+            160, 160, 140])
+        self.ditect_high_white = np.array([
+            190, 220, 190])
 
     def SetSrcImage(self, img):
         self.before_drawline_image = img
@@ -19,8 +21,12 @@ class LineDitector():
         self.after_drawline_image = img
 
     def SetColor(self, color):
-        self.ditect_low_white = (color[0] - 30, color[1] - 30, color[2] - 30)
-        self.ditect_high_white = (color[0] + 30, color[1] + 30, color[2] + 30)
+        self.ditect_low_white = np.array([
+            color[0] - (color[0] % 30), color[1] - 30, color[2] - 30])
+        self.ditect_high_white = np.array([
+            color[0] - (color[0] % 30) + 30, color[1] + 30, color[2] + 30])
+        print(self.ditect_low_white)
+        print(self.ditect_high_white)
 
     def Queue(self, img):
         self.before_drawline_image = self.after_drawline_image
@@ -31,6 +37,7 @@ class LineDitector():
         return cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 
     def GetWhite(self, src_image):
+        src_image = cv2.cvtColor(src_image, cv2.COLOR_BGR2HSV_FULL)
         return cv2.inRange(src_image, self.ditect_low_white, self.ditect_high_white)
 
     def GetSamePart(self, src1_image, src2_image):
@@ -40,8 +47,10 @@ class LineDitector():
         return cv2.Canny(src_image, 70, 100, 30)
 
     def DetectLine(self, src_image):
-        lines = cv2.HoughLinesP(src_image, 1, np.pi / 180, 40, 10, 100)
+        lines = cv2.HoughLinesP(src_image, rho=1,
+                                theta=np.pi / 360, threshold=40, minLineLength=40, maxLineGap=100)
         detedted_lines = []
+        print(lines)
         for x1, y1, x2, y2 in lines[0]:
             line = guide.Line(guide.Point(x1, y1), guide.Point(x2, y2))
             detedted_lines.append(line)
@@ -60,6 +69,11 @@ class LineDitector():
         white = self.GetWhite(self.after_drawline_image)
         same = self.GetSamePart(diff, white)
         edge = self.DetectEdge(same)
-        lines = self.DetectLine(edge)
-        line = self.GetLongestLine(lines)
-        return line
+        cv2.imshow('white', white)
+        if edge is not None:
+            lines = self.DetectLine(edge)
+            line = self.GetLongestLine(lines)
+            return line
+
+        else:
+            print('No lines')

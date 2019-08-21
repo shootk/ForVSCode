@@ -103,7 +103,7 @@ class MainWindow(wx.Frame):
         if return_value:
             for i in range(len(self.calibrate_points)):
                 cv2.line(
-                    frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (0, 255, 0))
+                    frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (187, 111, 0))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.webcampanel.bmp.CopyFromBuffer(frame)
         self.webcampanel.Refresh()
@@ -122,7 +122,7 @@ class MainWindow(wx.Frame):
         self.do_calibrate = False
         self.calibration_button.SetBackgroundColour('#ffffff')
         if self.do_color_set:
-            self.color_set_button.SetBackgroundColour('#edc26a')
+            self.color_set_button.SetBackgroundColour('#afbea5')
         else:
             self.color_set_button.SetBackgroundColour('#ffffff')
 
@@ -139,6 +139,16 @@ class MainWindow(wx.Frame):
             self.color_set_button.Disable()
             self.calibration_button.Disable()
             self.cancel_button.Enable()
+            self.line_detector.SetColor(self.choke_color)
+            return_value, frame = self.camera.read()
+            guide_display = wx.Display(self.guide_window.display_index)
+            _, _, w, h = guide_display.GetGeometry()
+            src_pts = np.array(
+                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+            dst_pts = self.calibrate_points
+            mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
+            self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
+            self.line_detector.Queue(img=self.warp_frame)
 
         else:
             self.ok_button.SetBackgroundColour('#ffffff')
@@ -158,10 +168,11 @@ class MainWindow(wx.Frame):
 
         elif self.do_color_set:
             return_value, frame = self.camera.read()
+            hsvframe = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV_FULL)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             if return_value:
-                hsvframe = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
-                self.choke_color = tuple(hsvframe[e.Y, e.X])
+                self.choke_color = hsvframe[e.Y, e.X]
+                print(self.choke_color)
                 self.color_set_button.SetBackgroundColour(
                     tuple(frame[e.Y, e.X]))
 
@@ -191,8 +202,7 @@ class MainWindow(wx.Frame):
         self.calibrate_points[min_index] = self.dst_pt
 
     def line_ditecting(self):
-        self.line_detector.SetColor(self.choke_color)
-        detected_line = self.line_detector.DoDetecting
+        detected_line = self.line_detector.DoDetecting()
         self.guide_window.guide_panel.set_guide(detected_line)
         self.guide_window.guide_panel.Refresh()
 
