@@ -26,6 +26,7 @@ class WebcamPanel(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
         self.Bind(wx.EVT_LEFT_UP, parent.MouseUp)
+        self.Bind(wx.EVT_MOUSEWHEEL, parent.MouseWheel)
 
     def OnPaint(self, e):
         dc = wx.BufferedPaintDC(self)
@@ -187,6 +188,9 @@ class MainWindow(wx.Frame):
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
             self.line_detector.Queue(img=self.warp_frame)
             self.line_ditecting()
+
+    def MouseWheel(self, e):
+        
 
     def calibrate(self):
         # マウスが押された点を要素とする長さ4の配列
