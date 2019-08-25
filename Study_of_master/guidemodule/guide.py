@@ -1,5 +1,4 @@
 import math
-import cv2
 
 
 class Point():
@@ -68,13 +67,14 @@ class FigureGuide():
     def __init__(self, width=640, height=480):
         self.line = Line(Point(width * 0.25, height / 2),
                          Point(width * 0.75, height / 2))
-        self.make_guide()
+        self.figure_guide = {}
+        self.set_guide()
 
     def set_line(self, line):
         self.line = line
-        self.make_guide()
+        self.set_guide()
 
-    def make_guide(self):
+    def set_guide(self):
         self.lines = []
         self.circles = []
 
@@ -87,6 +87,7 @@ class FigureGuide():
             self.line.length * 3)
 
         self.lines.append(self.vertical_bisector)
+        self.fig_guide
 
         self.vertical_line_1 = Line()
         self.vertical_line_1.make_from_radian(
@@ -111,16 +112,3 @@ class FigureGuide():
 
         self.right_circle = Circle(self.line.end, self.line.length)
         self.circles.append(self.right_circle)
-
-    def draw_guide(self, img):
-        for line in self.lines:
-            start = line.get_start()
-            end = line.get_end()
-            img = cv2.line(img, start, end, (255, 255, 255), 2)
-            print(start, end)
-
-        for circle in self.circles:
-            center = (circle.center.X, circle.center.Y)
-            radius = circle.radius
-            img = cv2.circle(img, center, radius, (255, 255, 255), 2)
-            print(center, radius)

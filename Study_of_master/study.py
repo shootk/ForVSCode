@@ -190,7 +190,7 @@ class MainWindow(wx.Frame):
             self.line_ditecting()
 
     def MouseWheel(self, e):
-        
+        pass
 
     def calibrate(self):
         # マウスが押された点を要素とする長さ4の配列
