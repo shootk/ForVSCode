@@ -25,8 +25,6 @@ class LineDitector():
             color[0] - (color[0] % 30), color[1] - 30, color[2] - 30])
         self.ditect_high_white = np.array([
             color[0] - (color[0] % 30) + 30, color[1] + 30, color[2] + 30])
-        print(self.ditect_low_white)
-        print(self.ditect_high_white)
 
     def Queue(self, img):
         self.before_drawline_image = self.after_drawline_image
@@ -50,7 +48,6 @@ class LineDitector():
         lines = cv2.HoughLinesP(src_image, rho=1,
                                 theta=np.pi / 360, threshold=40, minLineLength=40, maxLineGap=100)
         detedted_lines = []
-        print(lines)
         for x1, y1, x2, y2 in lines[0]:
             line = guide.Line(guide.Point(x1, y1), guide.Point(x2, y2))
             detedted_lines.append(line)
@@ -69,7 +66,7 @@ class LineDitector():
         white = self.GetWhite(self.after_drawline_image)
         same = self.GetSamePart(diff, white)
         edge = self.DetectEdge(same)
-        cv2.imshow('white', white)
+        cv2.imshow('edge', edge)
         if edge is not None:
             lines = self.DetectLine(edge)
             line = self.GetLongestLine(lines)

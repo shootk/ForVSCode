@@ -115,6 +115,8 @@ class MainWindow(wx.Frame):
         self.color_set_button.SetBackgroundColour('#ffffff')
         if self.do_calibrate:
             self.calibration_button.SetBackgroundColour('#6fbbee')
+            self.guide_window.guide_panel.color = True
+            self.guide_window.guide_panel.Refresh()
         else:
             self.calibration_button.SetBackgroundColour('#ffffff')
 
@@ -124,6 +126,8 @@ class MainWindow(wx.Frame):
         self.calibration_button.SetBackgroundColour('#ffffff')
         if self.do_color_set:
             self.color_set_button.SetBackgroundColour('#afbea5')
+            self.guide_window.guide_panel.color = False
+            self.guide_window.guide_panel.Refresh()
         else:
             self.color_set_button.SetBackgroundColour('#ffffff')
 
@@ -148,6 +152,8 @@ class MainWindow(wx.Frame):
                 [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
             dst_pts = self.calibrate_points
             mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
+            self.guide_window.guide_panel.color = False
+            self.guide_window.guide_panel.Refresh()
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
             self.line_detector.Queue(img=self.warp_frame)
 
@@ -190,7 +196,10 @@ class MainWindow(wx.Frame):
             self.line_ditecting()
 
     def MouseWheel(self, e):
-        pass
+        self.guide_window.guide_panel.key_num += 1
+        self.guide_window.guide_panel.key_num %= len(
+            self.guide_window.guide_panel.guide_key)
+        self.guide_window.guide_panel.Refresh()
 
     def calibrate(self):
         # マウスが押された点を要素とする長さ4の配列
@@ -216,24 +225,31 @@ class guidePanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         guide_display = wx.Display(parent.display_index)
         _, _, width, height = guide_display.GetGeometry()
-        self.figure_guide = guide.FigureGuide(width, height)
+        self.figure_guides = guide.FigureGuides()
+        self.guide_key = list(self.figure_guides.guides_parts.keys())
+        self.color = True
+        self.key_num = self.guide_key.index('no')
         self.SetSize(width, height)
         print(width, height)
         self.bmp = wx.EmptyBitmap(width, height, -1)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
 
     def set_guide(self, line):
-        self.figure_guide.set_line(line)
+        self.figure_guides.set_line(line)
 
     def OnPaint(self, e):
         dc = wx.BufferedPaintDC(self)
-        dc.SetBackground(wx.Brush('black'))
+        if self.color:
+            dc.SetBackground(wx.Brush('white'))
+        else:
+            dc.SetBackground(wx.Brush('black'))
+
         dc.Clear()
         dc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 100),
                              wx.BRUSHSTYLE_TRANSPARENT))
         dc.SetPen(wx.Pen('white', 10, wx.PENSTYLE_DOT))
-        lines = self.figure_guide.lines
-        circles = self.figure_guide.circles
+        lines, circles = self.figure_guides.get_guide(
+            self.guide_key[self.key_num])
         # Draw graphics.
         for line in lines:
             start = line.get_start()
