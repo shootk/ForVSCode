@@ -26,7 +26,7 @@ class WebcamPanel(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
         self.Bind(wx.EVT_LEFT_UP, parent.MouseLeftUp)
-        self.Bind(wx.EVT_Right_UP, parent.MouseRightUp)
+        self.Bind(wx.EVT_RIGHT_UP, parent.MouseRightUp)
         self.Bind(wx.EVT_MOUSEWHEEL, parent.MouseWheel)
 
     def OnPaint(self, e):
