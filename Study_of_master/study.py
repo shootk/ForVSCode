@@ -45,9 +45,8 @@ class MainWindow(wx.Frame):
         self.guide_window.Show()
         self.line_detector = linedetector.LineDitector()
         # カメラ
-        self.camera = cv2.VideoCapture(0)
+        self.camera = cv2.VideoCapture(1)
         return_value, frame = self.camera.read()
-
         height, width = frame.shape[:2]
         # カメラパネル
         self.webcampanel = WebcamPanel(self, frame)
@@ -99,7 +98,7 @@ class MainWindow(wx.Frame):
 
         # カメラの画像を再描画する関数を呼び出す間隔を設定
         self.timer = wx.Timer(self)
-        self.timer.Start(1000. / 10)
+        self.timer.Start(1000. / 15)
         self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
 
     def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
@@ -158,7 +157,7 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.color = False
             self.guide_window.guide_panel.Refresh()
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
-            self.line_detector.Queue(img=self.warp_frame)
+            self.line_detector.SetSrcImage(img=self.warp_frame)
 
         else:
             self.ok_button.SetBackgroundColour('#ffffff')
@@ -182,7 +181,6 @@ class MainWindow(wx.Frame):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             if return_value:
                 self.choke_color = hsvframe[e.Y, e.X]
-                print(self.choke_color)
                 self.color_set_button.SetBackgroundColour(
                     tuple(frame[e.Y, e.X]))
 
@@ -248,7 +246,6 @@ class guidePanel(wx.Panel):
         self.color = True
         self.key_num = self.guide_key.index('no')
         self.SetSize(width, height)
-        print(width, height)
         self.bmp = wx.EmptyBitmap(width, height, -1)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
 
@@ -284,6 +281,7 @@ class guideWindow(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self, parent)
         self.Maximize(True)
+        self.display_index = 0
         self.switch_window(parent)
         self.guide_panel = guidePanel(self)
         self.guide_panel.Refresh()

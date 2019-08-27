@@ -68,7 +68,6 @@ class LineDitector():
         white = self.GetWhite(self.after_drawline_image)
         same = self.GetSamePart(diff, white)
         edge = self.DetectEdge(same)
-        cv2.imshow('', diff)
         if edge is not None:
             lines = self.DetectLine(edge)
             line = self.GetLongestLine(lines)
