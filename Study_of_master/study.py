@@ -25,7 +25,8 @@ class WebcamPanel(wx.Panel):
 
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
-        self.Bind(wx.EVT_LEFT_UP, parent.MouseUp)
+        self.Bind(wx.EVT_LEFT_UP, parent.MouseLeftUp)
+        self.Bind(wx.EVT_Right_UP, parent.MouseRightUp)
         self.Bind(wx.EVT_MOUSEWHEEL, parent.MouseWheel)
 
     def OnPaint(self, e):
@@ -170,7 +171,7 @@ class MainWindow(wx.Frame):
         if self.do_calibrate:
             self.src_pt = (e.X, e.Y)
 
-    def MouseUp(self, e):  # マウスが離されたらその座標を取得
+    def MouseLeftUp(self, e):  # マウスが離されたらその座標を取得
         if self.do_calibrate:
             self.dst_pt = (e.X, e.Y)
             self.calibrate()
@@ -194,7 +195,19 @@ class MainWindow(wx.Frame):
             dst_pts = self.calibrate_points
             mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
-            self.line_detector.Queue(img=self.warp_frame)
+            self.line_detector.SetSrcImage(img=self.warp_frame)
+
+    def MouseRightUp(self, e):
+        if self.selection:
+            return_value, frame = self.camera.read()
+            guide_display = wx.Display(self.guide_window.display_index)
+            _, _, w, h = guide_display.GetGeometry()
+            src_pts = np.array(
+                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+            dst_pts = self.calibrate_points
+            mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
+            self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
+            self.line_detector.SetDstImage(img=self.warp_frame)
             self.line_ditecting()
 
     def MouseWheel(self, e):
