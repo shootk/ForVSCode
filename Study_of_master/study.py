@@ -1,6 +1,6 @@
 import wx
 import cv2
-# import time
+import time
 import numpy as np
 from guidemodule import guide
 from detectormodule import linedetector
@@ -75,6 +75,8 @@ class MainWindow(wx.Frame):
         self.ok_button.Bind(wx.EVT_BUTTON, self.SelectChange)
 
         self.selection = False
+
+        self.do = True
 
         button_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_box_sizer.Add(self.cancel_button, 1, wx.EXPAND)
@@ -196,10 +198,13 @@ class MainWindow(wx.Frame):
             self.line_ditecting()
 
     def MouseWheel(self, e):
-        self.guide_window.guide_panel.key_num += 1
-        self.guide_window.guide_panel.key_num %= len(
-            self.guide_window.guide_panel.guide_key)
-        self.guide_window.guide_panel.Refresh()
+        if self.do:
+            self.do = False
+            self.guide_window.guide_panel.key_num += 1
+            self.guide_window.guide_panel.key_num %= len(
+                self.guide_window.guide_panel.guide_key)
+            self.guide_window.guide_panel.Refresh()
+            self.do = True
 
     def calibrate(self):
         # マウスが押された点を要素とする長さ4の配列
@@ -292,7 +297,7 @@ class guideWindow(wx.Frame):
 
             if parent_display_w > parent_position_x:
                 self.SetPosition(
-                    (int(parent_display_w - (self.guide_display_w / 2)), int(self.guide_display_h / 2)))
+                    (int(parent_display_w + (self.guide_display_w / 2)), int(self.guide_display_h / 2)))
             else:
                 self.SetPosition(
                     (int(self.guide_display_w / 2), int(self.guide_display_h / 2)))
