@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+  <head lang="ja">
+    <meta charset="UTF-8" />
+    <title></title>
+  </head>
+  <body>
+    {% block body %} {% for idx in objects %}
+    {{ idx }}<br />
+    {% endfor %} {% endblock %}
+  </body>
+</html>

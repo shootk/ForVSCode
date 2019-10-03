@@ -55,7 +55,7 @@ ROOT_URLCONF = 'ordermaker.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates'), ],
+        'DIRS': [os.path.join(BASE_DIR, 'templates'), ],  # サイトのテンプレのpathを指定
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
