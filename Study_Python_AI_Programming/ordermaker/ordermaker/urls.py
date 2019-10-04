@@ -20,6 +20,6 @@ from django.conf.urls import include, url
 urlpatterns = [
     path('admin/', admin.site.urls),
     # includeの旧バージョンと新バージョンで書き方が違うらしい！
-    # このプロジェクトのURLディスパッチャにhelloアプリのディスパッチャを追加
+    # このプロジェクトのURLConfにhelloアプリのディスパッチャを追加
     url(r'^hello/', include(('hello.urls', 'hello'),)),
 ]

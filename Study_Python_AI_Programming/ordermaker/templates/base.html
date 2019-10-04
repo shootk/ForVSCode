@@ -5,6 +5,14 @@
     <title></title>
   </head>
   <body>
-    {% block body %} {% endblock %}
+    <div>
+      {% block body %} {% endblock %}
+    </div>
+    <div>
+      <a href="{%url 'hello:hello_world' %}">hello_world</a><br />
+      <a href="{%url 'hello:hello_template' %}">hello_template</a><br />
+      <a href="{%url 'hello:hello_if' %}">hello_if</a><br />
+      <a href="{%url 'hello:hello_for' %}">hello_for</a><br />
+    </div>
   </body>
 </html>
