@@ -1,3 +1,23 @@
 {%extends "crud/base.html" %}{% block body %}
-Index
+<form method="post" action="">
+  <table border="1">
+    <thead>
+      <tr>
+        <th>message</th>
+        <th>created_at</th>
+        <th>updated_at</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for message in messages %}
+      <tr>
+        <td>{{ message.message }}</td>
+        <td>{{ message.created_at }}</td>
+        <td>{{ message.updated_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</form>
 {% endblock %}

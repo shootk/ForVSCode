@@ -1,10 +1,14 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from .models import Message
 # Create your views here.
 
 
 def index(request):
-    return render(request, 'crud/index.html', {})
+    d = {
+        'messages': Message.objects.all(),
+    }
+    return render(request, 'crud/index.html', d)
 
 
 def add(request):
