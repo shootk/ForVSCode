@@ -22,4 +22,5 @@ urlpatterns = [
     # includeの旧バージョンと新バージョンで書き方が違うらしい！
     # このプロジェクトのURLディスパッチャにhelloのURLが来た時にhelloアプリのURLディスパッチャを呼ぶように設定
     url(r'^hello/', include(('hello.urls', 'hello'),)),
+    url(r'^crud/', include(('crud.urls', 'crud'),)),
 ]
