@@ -1,26 +1,29 @@
 import os
-import argparse 
+import argparse
 import string
-import pickle 
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
 from pystruct.datasets import load_letters
-from pystruct.models import ChainCRF 
+from pystruct.models import ChainCRF
 from pystruct.learners import FrankWolfeSSVM
+
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(description='Trains a Conditional\
             Random Field classifier')
     parser.add_argument("--C", dest="c_val", required=False, type=float,
-            default=1.0, help='C value to be used for training')
+                        default=1.0, help='C value to be used for training')
     return parser
 
 # Class to model the CRF
+
+
 class CRFModel(object):
     def __init__(self, c_val=1.0):
-        self.clf = FrankWolfeSSVM(model=ChainCRF(), 
-                C=c_val, max_iter=50) 
+        self.clf = FrankWolfeSSVM(model=ChainCRF(),
+                                  C=c_val, max_iter=50)
 
     # Load the training data
     def load_data(self):
@@ -44,6 +47,8 @@ class CRFModel(object):
         return self.clf.predict(input_data)[0]
 
 # Convert indices to alphabets
+
+
 def convert_to_letters(indices):
     # Create a numpy array of all alphabets
     alphabets = np.array(list(string.ascii_lowercase))
@@ -54,7 +59,8 @@ def convert_to_letters(indices):
 
     return output
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     args = build_arg_parser().parse_args()
     c_val = args.c_val
 
