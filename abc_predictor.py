@@ -3,26 +3,43 @@ def get_max_index(k):
     return 3 * (2 ** k - 1) - 1
 
 
-def level_down(now_s, now_t, lv):
-    max_index = get_max_index(lv)
-    mid_index = max_index / 2
-    if get_max_index(lv - 1) < t - s:
-        get_result()
-
-
-def get_result():
-    pass
-
-
 input_line = input()
-
 input_line = input_line.rstrip().split()
 k, s, t = int(input_line[0]), int(input_line[1]), int(input_line[2])
 
+top = 0
+end = now_t - now_s
+now_s, now_t = s, t
+lv = k
+
+result = [''] * (t - s)
 separate = False
-separate_index = 0
 
-max_index = get_max_index(k)
-mid_index = max_index / 2
+while True:
+    if not separate:
+        if now_t - now_s >= get_max_index(lv - 1):
+            break
 
-result = [0] * (t - s + 1)
+        if now_s == 0:
+            result[top] = 0
+            top += 1
+
+        elif now_s <= mid_index and mid_index <= now_t:
+            separate = True
+            result[mid_index - now_s] = 'b'
+            now_t -= mid_index
+
+        elif now_t == max_index:
+            result[end] = max_index
+            end -= 1
+
+    else:
+
+    if not separate:
+        if now_s > mid_index:
+            now_s -= mid_index
+            now_t -= mid_index
+        now_s -= 1
+        now_t -= 1
+
+    else:
