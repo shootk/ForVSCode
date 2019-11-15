@@ -13,16 +13,24 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
 
 
 class WebcamPanel(wx.Panel):
-    def __init__(self, parent, frame):  # fps15くらいが目安
+    def __init__(self, parent, frame):
+        '''
+        Paramaters
+        ----------
+        parent : wd.Frame
+        frame : Mat
+        '''
+        # Webカメラの入力画像を移すパネルの初期設定をオーバーライティング
         wx.Panel.__init__(self, parent)
-
+        # 入力画像の高さ,幅を取得
         height, width = frame.shape[:2]
-
+        # 入力画像をRGBの並びに変換、ビットマップ化する
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self.bmp = wx.BitmapFromBuffer(width, height, frame)
-
+        # 入力画像の高さ、幅に合わせる
         self.SetSize((width, height))
 
+        #
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
         self.Bind(wx.EVT_LEFT_UP, parent.MouseLeftUp)
