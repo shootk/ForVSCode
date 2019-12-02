@@ -25,7 +25,7 @@ class Line():
         self.start = start
         self.end = end
         self.length = math.sqrt(
-            (self.end.X - self.start.X) ** 2 + (self.end.Y - self.start.Y))
+            (self.end.X - self.start.X) ** 2 + (self.end.Y - self.start.Y) ** 2)
         self.middle_point = Point(
             (self.end.X + self.start.X) / 2, (self.end.Y + self.start.Y) / 2)
         self.angle_rad = math.atan2(
@@ -49,7 +49,7 @@ class Line():
             self.end.change_coordinate(x, y)
 
         self.length = math.sqrt(
-            (self.end.X - self.start.X) ** 2 + (self.end.Y - self.start.Y))
+            (self.end.X - self.start.X) ** 2 + (self.end.Y - self.start.Y) ** 2)
         self.middle_point = Point(
             (self.end.X - self.start.X) / 2, (self.end.Y - self.start.Y) / 2)
         self.angle_rad = math.atan2(

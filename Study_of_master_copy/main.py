@@ -1,4 +1,5 @@
 import wx
+
 import cv2
 import time
 import numpy as np
@@ -53,7 +54,7 @@ class MainWindow(wx.Frame):
         self.guide_window.Show()
         self.line_detector = linedetector.LineDitector()
         # カメラ
-        self.camera = cv2.VideoCapture(0)
+        self.camera = cv2.VideoCapture(1)
 
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
@@ -224,6 +225,7 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.key_num %= len(
                 self.guide_window.guide_panel.guide_key)
             self.guide_window.guide_panel.Refresh()
+            time.sleep(0.3)
             self.do = True
 
     def calibrate(self):
