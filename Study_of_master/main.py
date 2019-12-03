@@ -224,6 +224,7 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.key_num %= len(
                 self.guide_window.guide_panel.guide_key)
             self.guide_window.guide_panel.Refresh()
+            time.sleep(0.3)
             self.do = True
 
     def calibrate(self):
