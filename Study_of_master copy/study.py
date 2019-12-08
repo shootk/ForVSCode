@@ -1,5 +1,4 @@
 import wx
-
 import cv2
 import time
 import numpy as np
@@ -14,24 +13,16 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
 
 
 class WebcamPanel(wx.Panel):
-    def __init__(self, parent, frame):
-        '''
-        Paramaters
-        ----------
-        parent : wd.Frame
-        frame : Mat
-        '''
-        # Webカメラの入力画像を移すパネルの初期設定をオーバーライティング
+    def __init__(self, parent, frame):  # fps15くらいが目安
         wx.Panel.__init__(self, parent)
-        # 入力画像の高さ,幅を取得
+
         height, width = frame.shape[:2]
-        # 入力画像をRGBの並びに変換、ビットマップ化する
+
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self.bmp = wx.BitmapFromBuffer(width, height, frame)
-        # 入力画像の高さ、幅に合わせる
+
         self.SetSize((width, height))
 
-        #
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
         self.Bind(wx.EVT_LEFT_UP, parent.MouseLeftUp)
@@ -55,7 +46,6 @@ class MainWindow(wx.Frame):
         self.line_detector = linedetector.LineDitector()
         # カメラ
         self.camera = cv2.VideoCapture(1)
-
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
         # カメラパネル
@@ -225,7 +215,6 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.key_num %= len(
                 self.guide_window.guide_panel.guide_key)
             self.guide_window.guide_panel.Refresh()
-            time.sleep(0.3)
             self.do = True
 
     def calibrate(self):
