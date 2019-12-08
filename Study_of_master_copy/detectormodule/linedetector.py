@@ -25,7 +25,7 @@ class LineDitector():
             # color[0] - (color[0] % 30
             0, color[1] - 30, color[2] - 30])
         self.ditect_high_white = np.array([
-            #color[0] - (color[0] % 30) + 30
+            # color[0] - (color[0] % 30) + 30
             360, color[1] + 30, color[2] + 30])
 
     def Queue(self, img):
@@ -62,7 +62,7 @@ class LineDitector():
                 max_line = line
         return max_line
 
-    def DoDetecting(self):
+    def Detecting(self):
         diff = self.GetDifference(
             self.before_drawline_image, self.after_drawline_image)
         white = self.GetWhite(self.after_drawline_image)
