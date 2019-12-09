@@ -16,6 +16,12 @@ class CameraControl():
     def __init__(self):
         self.camera = cv2.VideoCapture(1)
 
+    def get_frame_onse(self):
+        ret, frame = self.camera.read()
+        if not ret:
+            frame = None
+        return frame
+
 
 class WebcamPanel(wx.Panel):
     def __init__(self, parent, frame):

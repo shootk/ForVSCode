@@ -4,6 +4,7 @@ from guidemodule import guide
 
 
 class LineDitector():
+
     def __init__(self, width=640, height=480, color=(200, 200, 200)):
 
         self.before_drawline_image = np.zeros((width, height), dtype=np.uint8)
@@ -51,8 +52,10 @@ class LineDitector():
                                 theta=np.pi / 360, threshold=40, minLineLength=40, maxLineGap=100)
         detedted_lines = []
         for x1, y1, x2, y2 in lines[0]:
+
             line = guide.Line(guide.Point(x1, y1), guide.Point(x2, y2))
             detedted_lines.append(line)
+
         return detedted_lines
 
     def GetLongestLine(self, lines):
