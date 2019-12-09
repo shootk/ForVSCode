@@ -12,6 +12,11 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
         super(MyThread, self).__init__()
 
 
+class CameraControl():
+    def __init__(self):
+        self.camera = cv2.VideoCapture(1)
+
+
 class WebcamPanel(wx.Panel):
     def __init__(self, parent, frame):
         '''
