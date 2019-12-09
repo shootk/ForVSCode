@@ -60,11 +60,11 @@ class MainWindow(wx.Frame):
         self.Title = "webcam"
 
         # ガイドを表示するウィンドウを作成，表示
-        self.guide_window = guideWindow(self)
+        self.guide_window = GuideWindow(self)
         self.guide_window.Show()
         self.line_detector = linedetector.LineDitector()
         # カメラ
-        self.camera = cv2.VideoCapture(1)
+        self.camera = cv2.VideoCapture(0)
 
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
@@ -257,7 +257,7 @@ class MainWindow(wx.Frame):
         self.guide_window.guide_panel.Refresh()
 
 
-class guidePanel(wx.Panel):
+class GuidePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         guide_display = wx.Display(parent.display_index)
@@ -298,13 +298,13 @@ class guidePanel(wx.Panel):
             dc.DrawCircle(center[0], center[1], radius)
 
 
-class guideWindow(wx.Frame):
+class GuideWindow(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self, parent)
         self.Maximize(True)
         self.display_index = 0
         self.switch_window(parent)
-        self.guide_panel = guidePanel(self)
+        self.guide_panel = GuidePanel(self)
         self.guide_panel.Refresh()
 
         main_window_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -314,6 +314,7 @@ class guideWindow(wx.Frame):
         # サイズを合わせる
         main_window_sizer.Fit(self)
         self.SetSizer(main_window_sizer)
+        self.ShowFullScreen(True)
 
     def switch_window(self, parent):
         if wx.Display.GetCount() == 2:
@@ -339,6 +340,7 @@ def main():
     app = wx.App()
     main_window = MainWindow()
     main_window.Show()
+    guide_window = GuideWindow(main_window)
     app.MainLoop()
 
 
