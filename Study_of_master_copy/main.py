@@ -7,6 +7,17 @@ from detectormodule import linedetector
 import concurrent.futures
 
 
+class myApp(wx.App):
+    def __init__(self):
+        wx.App.__init__(self, None)
+        self.main_window = MainWindow()
+        self.guide_window = GuideWindow()
+        self.camera_control = CameraControl()
+        self.line_ditector = linedetector()
+        self.guide = guide()
+        self.thread = MyThread()
+
+
 class MyThread(concurrent.futures.ProcessPoolExecutor):
     def __init__(self):
         super(MyThread, self).__init__()
@@ -340,7 +351,6 @@ def main():
     app = wx.App()
     main_window = MainWindow()
     main_window.Show()
-    guide_window = GuideWindow(main_window)
     app.MainLoop()
 
 
