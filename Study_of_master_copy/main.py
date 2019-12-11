@@ -7,31 +7,35 @@ from detectormodule import linedetector
 import concurrent.futures
 
 
-class myApp(wx.App):
+class MyApp(wx.App):
     def __init__(self):
         wx.App.__init__(self, None)
-        self.main_window = MainWindow()
-        self.guide_window = GuideWindow()
-        self.camera_control = CameraControl()
-        self.line_ditector = linedetector()
-        self.guide = guide()
+        self.camera = cv2.VideoCapture(0)
+        while True:
+            ret, frame = self.camera.read()
+            if ret:
+                break
+        self.main_window = MainWindow(frame)
+        self.main_window.Show()
+        self.guide_window = GuideWindow(self.main_window)
+        self.guide_window.Show()
+        self.line_ditector = linedetector.LineDitector()
+        self.guide = guide.FigureGuides()
         self.thread = MyThread()
+
+        self.timer = wx.Timer(self)
+        self.timer.Start(1000. / 15)
+        self.Bind(wx.EVT_TIMER, self.camera_caputure)
+
+    def camera_caputure(self, e):
+        ret, camera_frame = self.camera.read()
+        if ret:
+            self.main_window.WebcamPanelNextFrame(camera_frame)
 
 
 class MyThread(concurrent.futures.ProcessPoolExecutor):
     def __init__(self):
         super(MyThread, self).__init__()
-
-
-class CameraControl():
-    def __init__(self):
-        self.camera = cv2.VideoCapture(1)
-
-    def get_frame_onse(self):
-        ret, frame = self.camera.read()
-        if not ret:
-            frame = None
-        return frame
 
 
 class WebcamPanel(wx.Panel):
@@ -65,19 +69,15 @@ class WebcamPanel(wx.Panel):
 
 
 class MainWindow(wx.Frame):
-    def __init__(self):
+    def __init__(self, frame):
         # 継承
         wx.Frame.__init__(self, None)
         self.Title = "webcam"
 
         # ガイドを表示するウィンドウを作成，表示
-        self.guide_window = GuideWindow(self)
-        self.guide_window.Show()
         self.line_detector = linedetector.LineDitector()
         # カメラ
-        self.camera = cv2.VideoCapture(0)
 
-        return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
         # カメラパネル
         self.webcampanel = WebcamPanel(self, frame)
@@ -128,18 +128,13 @@ class MainWindow(wx.Frame):
         self.SetSizer(main_window_sizer)
 
         # カメラの画像を再描画する関数を呼び出す間隔を設定
-        self.timer = wx.Timer(self)
-        self.timer.Start(1000. / 15)
-        self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
 
-    def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
-        return_value, frame = self.camera.read()
-        if return_value:
-            for i in range(len(self.calibrate_points)):
-                cv2.line(
-                    frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (187, 111, 0))
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            self.webcampanel.bmp.CopyFromBuffer(frame)
+    def WebcamPanelNextFrame(self, camera_frame):  # カメラ画像書き換え
+        for i in range(len(self.calibrate_points)):
+            cv2.line(
+                camera_frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (187, 111, 0))
+        camera_frame = cv2.cvtColor(camera_frame, cv2.COLOR_BGR2RGB)
+        self.webcampanel.bmp.CopyFromBuffer(camera_frame)
         self.webcampanel.Refresh()
 
     def CalibStateChange(self, e):  # キャリブレーション状態切替
@@ -348,9 +343,7 @@ class GuideWindow(wx.Frame):
 
 
 def main():
-    app = wx.App()
-    main_window = MainWindow()
-    main_window.Show()
+    app = MyApp()
     app.MainLoop()
 
 
