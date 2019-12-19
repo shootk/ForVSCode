@@ -17,20 +17,25 @@ class MyApp(wx.App):
                 break
         self.main_window = MainWindow(frame)
         self.main_window.Show()
+        self.SetTopWindow(self.main_window)
         self.guide_window = GuideWindow(self.main_window)
         self.guide_window.Show()
         self.line_ditector = linedetector.LineDitector()
         self.guide = guide.FigureGuides()
         self.thread = MyThread()
 
-        self.timer = wx.Timer(self)
-        self.timer.Start(1000. / 15)
+        self.camera_timer = wx.Timer(self)
+        self.camera_timer.Start(1000. / 15)
         self.Bind(wx.EVT_TIMER, self.camera_caputure)
 
     def camera_caputure(self, e):
         ret, camera_frame = self.camera.read()
         if ret:
             self.main_window.WebcamPanelNextFrame(camera_frame)
+            self.line_ditecting(camera_frame)
+
+    def line_ditecting(self, frame):
+        print("s")
 
 
 class MyThread(concurrent.futures.ProcessPoolExecutor):
