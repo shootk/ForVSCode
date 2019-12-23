@@ -32,6 +32,8 @@ class MyApp(wx.App):
         if ret:
             self.main_window.WebcamPanelNextFrame(camera_frame)
 
+    def 
+
 
 class MyThread(concurrent.futures.ProcessPoolExecutor):
     def __init__(self):
