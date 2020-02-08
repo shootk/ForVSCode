@@ -37,6 +37,8 @@ class MyApp(wx.App):
     def line_ditecting(self, frame):
         print("s")
 
+    def 
+
 
 class MyThread(concurrent.futures.ProcessPoolExecutor):
     def __init__(self):
