@@ -10,7 +10,7 @@ import concurrent.futures
 class MyApp(wx.App):
     def __init__(self):
         wx.App.__init__(self, None)
-        self.camera = cv2.VideoCapture(0)
+        self.camera = cv2.VideoCapture(1)
         while True:
             ret, frame = self.camera.read()
             if ret:

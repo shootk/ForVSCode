@@ -303,6 +303,7 @@ class guideWindow(wx.Frame):
         # サイズを合わせる
         main_window_sizer.Fit(self)
         self.SetSizer(main_window_sizer)
+        self.ShowFullScreen(True)
 
     def switch_window(self, parent):
         if wx.Display.GetCount() == 2:
