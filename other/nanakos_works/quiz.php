@@ -1,5 +1,5 @@
 <? php
-$title = "関東の件はどれですか？";
+$title = "関東の県はどれですか？";
 
 $question = array();
 
@@ -19,7 +19,7 @@ shuffle($question);
 
   <body>
     <h2><?php echo $title ?></h2>
-    <form method="POST" , action="answer.php">
+    <form method="POST"  action="answer.php">
       <?php foreach($question as $value){ ?>
         <input type ="radio" name="question" value="<?php echo $value; ?>" /><?php echo $value; ?><br>
       <?php } ?>
