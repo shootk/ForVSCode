@@ -2,6 +2,7 @@ import wx
 import cv2
 import time
 import numpy as np
+import random
 from guidemodule import guide
 from detectormodule import linedetector
 import concurrent.futures
@@ -20,7 +21,7 @@ class WebcamPanel(wx.Panel):
         parent : wd.Frame
         frame : Mat
         '''
-        # Webカメラの入力画像を移すパネルの初期設定をオーバーライティング
+        # Webカメラの入力画像を移すパネルの初期設定をオーバーライド
         wx.Panel.__init__(self, parent)
         # 入力画像の高さ,幅を取得
         height, width = frame.shape[:2]
@@ -35,7 +36,6 @@ class WebcamPanel(wx.Panel):
         self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
         self.Bind(wx.EVT_LEFT_UP, parent.MouseLeftUp)
         self.Bind(wx.EVT_RIGHT_UP, parent.MouseRightUp)
-        self.Bind(wx.EVT_MOUSEWHEEL, parent.MouseWheel)
 
     def OnPaint(self, e):
         dc = wx.BufferedPaintDC(self)
@@ -53,7 +53,7 @@ class MainWindow(wx.Frame):
         self.guide_window.Show()
         self.line_detector = linedetector.LineDitector()
         # カメラ
-        self.camera = cv2.VideoCapture(1)
+        self.camera = cv2.VideoCapture(0)
 
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
@@ -190,6 +190,7 @@ class MainWindow(wx.Frame):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             if return_value:
                 self.choke_color = hsvframe[e.Y, e.X]
+                self.line_detector.SetColor(self.choke_color)
                 self.color_set_button.SetBackgroundColour(
                     tuple(frame[e.Y, e.X]))
 
@@ -198,7 +199,8 @@ class MainWindow(wx.Frame):
             guide_display = wx.Display(self.guide_window.display_index)
             _, _, w, h = guide_display.GetGeometry()
             src_pts = np.array(
-                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+                [[0, 0], [0, h - 1],
+                 [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
             dst_pts = self.calibrate_points
             mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
@@ -210,22 +212,13 @@ class MainWindow(wx.Frame):
             guide_display = wx.Display(self.guide_window.display_index)
             _, _, w, h = guide_display.GetGeometry()
             src_pts = np.array(
-                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+                [[0, 0], [0, h - 1],
+                 [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
             dst_pts = self.calibrate_points
             mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
             self.line_detector.SetDstImage(img=self.warp_frame)
             self.line_ditecting()
-
-    def MouseWheel(self, e):
-        if self.do:
-            self.do = False
-            self.guide_window.guide_panel.key_num += 1
-            self.guide_window.guide_panel.key_num %= len(
-                self.guide_window.guide_panel.guide_key)
-            self.guide_window.guide_panel.Refresh()
-            time.sleep(0.3)
-            self.do = True
 
     def calibrate(self):
         # マウスが押された点を要素とする長さ4の配列
@@ -242,8 +235,9 @@ class MainWindow(wx.Frame):
 
     def line_ditecting(self):
         detected_line = self.line_detector.DoDetecting()
-        self.guide_window.guide_panel.set_guide(detected_line)
-        self.guide_window.guide_panel.Refresh()
+        if detected_line is not None:
+            self.guide_window.guide_panel.line = detected_line
+            self.guide_window.guide_panel.line_detect = True
 
 
 class guidePanel(wx.Panel):
@@ -251,16 +245,27 @@ class guidePanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         guide_display = wx.Display(parent.display_index)
         _, _, width, height = guide_display.GetGeometry()
-        self.figure_guides = guide.FigureGuides()
-        self.guide_key = list(self.figure_guides.guides_parts.keys())
-        self.color = True
-        self.key_num = self.guide_key.index('no')
+        self.line = guide.Line()
+        self.line_detect = False
+        self.color = False
+        self.image_list = [
+            wx.Bitmap('src/chara/arare.png'),
+            wx.Bitmap('src/chara/ayamin.png'),
+            wx.Bitmap('src/chara/chee.png'),
+            wx.Bitmap('src/chara/gitex.png'),
+            wx.Bitmap('src/chara/haru.png'),
+            wx.Bitmap('src/chara/kazoo.png'),
+            wx.Bitmap('src/chara/pakche.png'),
+            wx.Bitmap('src/chara/shiro.png'),
+            wx.Bitmap('src/chara/shoot.png'),
+            wx.Bitmap('src/chara/tak.png'),
+            wx.Bitmap('src/chara/tuna.png')
+        ]
         self.SetSize(width, height)
         self.bmp = wx.EmptyBitmap(width, height, -1)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
-
-    def set_guide(self, line):
-        self.figure_guides.set_line(line)
+        self.place = [0, 0]
+        self.chara = None
 
     def OnPaint(self, e):
         dc = wx.BufferedPaintDC(self)
@@ -270,21 +275,41 @@ class guidePanel(wx.Panel):
             dc.SetBackground(wx.Brush('black'))
 
         dc.Clear()
-        dc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, 100),
-                             wx.BRUSHSTYLE_TRANSPARENT))
-        dc.SetPen(wx.Pen('white', 10, wx.PENSTYLE_DOT))
-        lines, circles = self.figure_guides.get_guide(
-            self.guide_key[self.key_num])
-        # Draw graphics.
-        for line in lines:
-            start = line.get_start()
-            end = line.get_end()
-            dc.DrawLine(start, end)
+        if self.line_detect:
+            image = self.image_list[random.randint(0, len(self.image_list))]
+            x1, y1 = 0, 0
+            x2, y2 = 100, 100
+            # x1, y1 = self.line.start.X, self.line.start.Y
+            # x2, y2 = self.line.end.X, self.line.end.Y
+            a = 1
+            if (x1 < x2):
+                x, y = x1, y1
+                a = (y1 - y2) / (x1 - x2)
+            elif(x2 < x1):
+                x, y = x2, y2
+                a = (y1 - y2) / (x1 - x2)
+            dc.DrawBitmap(image, x, y)
+        else:
 
-        for circle in circles:
-            center = (circle.center.X, circle.center.Y)
-            radius = circle.radius
-            dc.DrawCircle(center[0], center[1], radius)
+
+class Chara():
+    def __init__(self, line=guide.Line(), image):
+        self.x1 = line.start.X
+        self.y1 = line.start.Y
+        self.x2 = line.end.X
+        self.y2 = line.end.Y
+        self.image = image
+        if (x1 < x2):
+            self.x, self.y = self.x1, self.y1
+            self.a = (self.y1 - self.y2) / (self.x1 - self.x2)
+        elif(x2 < x1):
+            self.x, self.y = self.x2, self.y2
+            self.a = (self.y1 - self.y2) / (self.x1 - self.x2)
+
+    def step(self, r):
+        self.x += r
+        self.y += r * self.a
+        return (x <= x2)
 
 
 class guideWindow(wx.Frame):
@@ -302,6 +327,9 @@ class guideWindow(wx.Frame):
         main_window_sizer.SetItemMinSize(self.guide_panel, (1200, 1024))
         # サイズを合わせる
         main_window_sizer.Fit(self)
+        self.timer = wx.Timer(self)
+        self.timer.Start(1000. / 15)
+        self.Bind(wx.EVT_TIMER, self.guide_panel.OnPaint)
         self.SetSizer(main_window_sizer)
         self.ShowFullScreen(True)
 
