@@ -50,9 +50,10 @@ class LineDitector():
         lines = cv2.HoughLinesP(src_image, rho=1,
                                 theta=np.pi / 360, threshold=40, minLineLength=40, maxLineGap=100)
         detedted_lines = []
-        for x1, y1, x2, y2 in lines[0]:
-            line = guide.Line(guide.Point(x1, y1), guide.Point(x2, y2))
-            detedted_lines.append(line)
+        if lines is not None:
+            for x1, y1, x2, y2 in lines[0]:
+                line = guide.Line(guide.Point(x1, y1), guide.Point(x2, y2))
+                detedted_lines.append(line)
         return detedted_lines
 
     def GetLongestLine(self, lines):

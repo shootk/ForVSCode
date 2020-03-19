@@ -273,43 +273,36 @@ class guidePanel(wx.Panel):
             dc.SetBackground(wx.Brush('white'))
         else:
             dc.SetBackground(wx.Brush('black'))
-
-        dc.Clear()
+        print("in\n")
         if self.line_detect:
-            image = self.image_list[random.randint(0, len(self.image_list))]
-            x1, y1 = 0, 0
-            x2, y2 = 100, 100
-            # x1, y1 = self.line.start.X, self.line.start.Y
-            # x2, y2 = self.line.end.X, self.line.end.Y
-            a = 1
-            if (x1 < x2):
-                x, y = x1, y1
-                a = (y1 - y2) / (x1 - x2)
-            elif(x2 < x1):
-                x, y = x2, y2
-                a = (y1 - y2) / (x1 - x2)
-            dc.DrawBitmap(image, x, y)
-        else:
+            dc.Clear()
+            if (self.chara is None):
+                self.chara = Chara(
+                    self.line, image=self.image_list[random.randint(0, len(self.image_list))])
+            self.line_detect = self.chara.step(5)
+            dc.DrawBitmap(self.chara.image, self.chara.x, self.chara.y)
 
 
 class Chara():
-    def __init__(self, line=guide.Line(), image):
+    def __init__(self, line=guide.Line(), image=None):
         self.x1 = line.start.X
         self.y1 = line.start.Y
         self.x2 = line.end.X
         self.y2 = line.end.Y
+        self.x = self.x1
+        self.y = self.y1
         self.image = image
-        if (x1 < x2):
+        if (self.x1 < self.x2):
             self.x, self.y = self.x1, self.y1
             self.a = (self.y1 - self.y2) / (self.x1 - self.x2)
-        elif(x2 < x1):
+        elif(self.x2 < self.x1):
             self.x, self.y = self.x2, self.y2
             self.a = (self.y1 - self.y2) / (self.x1 - self.x2)
 
     def step(self, r):
         self.x += r
         self.y += r * self.a
-        return (x <= x2)
+        return (self.x <= self.x2)
 
 
 class guideWindow(wx.Frame):
@@ -328,10 +321,13 @@ class guideWindow(wx.Frame):
         # サイズを合わせる
         main_window_sizer.Fit(self)
         self.timer = wx.Timer(self)
-        self.timer.Start(1000. / 15)
-        self.Bind(wx.EVT_TIMER, self.guide_panel.OnPaint)
+        self.timer.Start(1000. / 50)
+        self.Bind(wx.EVT_TIMER, self.paint)
         self.SetSizer(main_window_sizer)
         self.ShowFullScreen(True)
+
+    def paint(self, e):
+        self.guide_panel.Refresh()
 
     def switch_window(self, parent):
         if wx.Display.GetCount() == 2:

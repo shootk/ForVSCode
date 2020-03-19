@@ -7,5 +7,5 @@
   "python.linting.flake8Enabled": true,
   "python.linting.flake8Args": ["--ignore=E501"],
   "editor.formatOnSave": true,
-  "python.pythonPath": "C:\\Users\\shoot\\AppData\\Local\\Programs\\Python\\Python38\\python.exe"
+  "python.pythonPath": "C:\\Users\\a1514\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe"
 }
