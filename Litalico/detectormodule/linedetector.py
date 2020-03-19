@@ -9,10 +9,10 @@ class LineDitector():
         self.before_drawline_image = np.zeros((width, height), dtype=np.uint8)
         self.after_drawline_image = np.zeros((width, height), dtype=np.uint8)
         self.detected_line = guide.Line()
-        self.ditect_low_white = np.array([
-            160, 160, 140])
-        self.ditect_high_white = np.array([
-            190, 220, 190])
+        self.ditect_low_color = np.array([
+            0, 0, 0])
+        self.ditect_high_color = np.array([
+            255, 30, 30])
 
     def SetSrcImage(self, img):
         self.before_drawline_image = img
@@ -74,4 +74,4 @@ class LineDitector():
             return line
 
         else:
-            print('No lines')
+            return None
