@@ -21,7 +21,7 @@ class Circle():
 
 
 class Line():
-    def __init__(self, start=Point(-1, -1), end=Point(-1, -1)):
+    def __init__(self, start=Point(-2, -2), end=Point(-1, -1)):
         self.start = start
         self.end = end
         self.length = math.sqrt(

@@ -12,7 +12,7 @@ class LineDitector():
         self.ditect_low_color = np.array([
             0, 0, 0])
         self.ditect_high_color = np.array([
-            255, 30, 30])
+            255, 255, 360])
 
     def SetSrcImage(self, img):
         self.before_drawline_image = img
@@ -48,7 +48,8 @@ class LineDitector():
 
     def DetectLine(self, src_image):
         lines = cv2.HoughLinesP(src_image, rho=1,
-                                theta=np.pi / 360, threshold=40, minLineLength=40, maxLineGap=100)
+                                theta=np.pi / 360, threshold=40,
+                                minLineLength=10, maxLineGap=100)
         detedted_lines = []
         if lines is not None:
             for x1, y1, x2, y2 in lines[0]:

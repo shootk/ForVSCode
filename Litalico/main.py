@@ -1,6 +1,6 @@
 import wx
 import cv2
-import time
+import math
 import numpy as np
 import random
 from guidemodule import guide
@@ -53,7 +53,7 @@ class MainWindow(wx.Frame):
         self.guide_window.Show()
         self.line_detector = linedetector.LineDitector()
         # カメラ
-        self.camera = cv2.VideoCapture(0)
+        self.camera = cv2.VideoCapture(1)
 
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
@@ -109,13 +109,16 @@ class MainWindow(wx.Frame):
         self.timer = wx.Timer(self)
         self.timer.Start(1000. / 15)
         self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
+        self.Bind(wx.EVT_KEY_DOWN, self.onKey)
 
     def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
         return_value, frame = self.camera.read()
         if return_value:
             for i in range(len(self.calibrate_points)):
                 cv2.line(
-                    frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (187, 111, 0))
+                    frame,
+                    tuple(self.calibrate_points[i % 4]),
+                    tuple(self.calibrate_points[(i + 1) % 4]), (187, 111, 0))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.webcampanel.bmp.CopyFromBuffer(frame)
         self.webcampanel.Refresh()
@@ -160,7 +163,8 @@ class MainWindow(wx.Frame):
             guide_display = wx.Display(self.guide_window.display_index)
             _, _, w, h = guide_display.GetGeometry()
             src_pts = np.array(
-                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+                [[0, 0], [0, h - 1],
+                 [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
             dst_pts = self.calibrate_points
             mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
             self.guide_window.guide_panel.color = False
@@ -220,6 +224,33 @@ class MainWindow(wx.Frame):
             self.line_detector.SetDstImage(img=self.warp_frame)
             self.line_ditecting()
 
+    def onKey(self, e):
+        keycode = e.GetKeyCode()
+        if self.selection:
+            if keycode == wx.WXK_SPACE:
+                return_value, frame = self.camera.read()
+                guide_display = wx.Display(self.guide_window.display_index)
+                _, _, w, h = guide_display.GetGeometry()
+                src_pts = np.array(
+                    [[0, 0], [0, h - 1],
+                     [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+                dst_pts = self.calibrate_points
+                mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
+                self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
+                self.line_detector.SetSrcImage(img=self.warp_frame)
+            elif keycode == wx.WXK_RETURN:
+                return_value, frame = self.camera.read()
+                guide_display = wx.Display(self.guide_window.display_index)
+                _, _, w, h = guide_display.GetGeometry()
+                src_pts = np.array(
+                    [[0, 0], [0, h - 1],
+                     [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+                dst_pts = self.calibrate_points
+                mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
+                self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
+                self.line_detector.SetDstImage(img=self.warp_frame)
+                self.line_ditecting()
+
     def calibrate(self):
         # マウスが押された点を要素とする長さ4の配列
         src_pts = np.float32(
@@ -249,17 +280,17 @@ class guidePanel(wx.Panel):
         self.line_detect = False
         self.color = False
         self.image_list = [
-            wx.Bitmap('src/chara/arare.png'),
-            wx.Bitmap('src/chara/ayamin.png'),
-            wx.Bitmap('src/chara/chee.png'),
-            wx.Bitmap('src/chara/gitex.png'),
-            wx.Bitmap('src/chara/haru.png'),
-            wx.Bitmap('src/chara/kazoo.png'),
-            wx.Bitmap('src/chara/pakche.png'),
-            wx.Bitmap('src/chara/shiro.png'),
-            wx.Bitmap('src/chara/shoot.png'),
-            wx.Bitmap('src/chara/tak.png'),
-            wx.Bitmap('src/chara/tuna.png')
+            wx.Image('src/chara/arare.png'),
+            wx.Image('src/chara/ayamin.png'),
+            wx.Image('src/chara/chee.png'),
+            wx.Image('src/chara/gitex.png'),
+            wx.Image('src/chara/haru.png'),
+            wx.Image('src/chara/kazoo.png'),
+            wx.Image('src/chara/pakche.png'),
+            wx.Image('src/chara/shiro.png'),
+            wx.Image('src/chara/shoot.png'),
+            wx.Image('src/chara/tak.png'),
+            wx.Image('src/chara/tuna.png')
         ]
         self.SetSize(width, height)
         self.bmp = wx.EmptyBitmap(width, height, -1)
@@ -268,19 +299,30 @@ class guidePanel(wx.Panel):
         self.chara = None
 
     def OnPaint(self, e):
-        dc = wx.BufferedPaintDC(self)
-        if self.color:
-            dc.SetBackground(wx.Brush('white'))
-        else:
-            dc.SetBackground(wx.Brush('black'))
-        print("in\n")
         if self.line_detect:
+            dc = wx.BufferedPaintDC(self)
+            dc.SetBackground(wx.Brush('black'))
             dc.Clear()
             if (self.chara is None):
+                image = self.image_list[
+                    random.randint(0, len(self.image_list)-1)]
+                image.Rescale(100, 100)
+                bitmap = image.ConvertToBitmap()
                 self.chara = Chara(
-                    self.line, image=self.image_list[random.randint(0, len(self.image_list))])
-            self.line_detect = self.chara.step(5)
-            dc.DrawBitmap(self.chara.image, self.chara.x, self.chara.y)
+                    self.line, image=bitmap)
+            self.line_detect = self.chara.step()
+            dc.DrawBitmap(self.chara.image,
+                          self.chara.x - 100, self.chara.y-100, True)
+            print(self.chara.x, self.chara.y)
+        else:
+            dc = wx.BufferedPaintDC(self)
+            if self.color:
+                dc.SetBackground(wx.Brush('white'))
+            else:
+                dc.SetBackground(wx.Brush('black'))
+
+            dc.Clear()
+            self.chara = None
 
 
 class Chara():
@@ -292,17 +334,14 @@ class Chara():
         self.x = self.x1
         self.y = self.y1
         self.image = image
-        if (self.x1 < self.x2):
-            self.x, self.y = self.x1, self.y1
-            self.a = (self.y1 - self.y2) / (self.x1 - self.x2)
-        elif(self.x2 < self.x1):
-            self.x, self.y = self.x2, self.y2
-            self.a = (self.y1 - self.y2) / (self.x1 - self.x2)
+        self.r = 3
+        self.a = (self.y2 - self.y1)/(self.x2-self.x1)
 
-    def step(self, r):
-        self.x += r
-        self.y += r * self.a
-        return (self.x <= self.x2)
+    def step(self):
+        self.x += self.r
+        self.y = int(self.y + self.r * self.a)
+        return (((self.x1 < self.x) and (self.x < self.x2))
+                or ((self.x2 < self.x) and (self.x < self.x1)))
 
 
 class guideWindow(wx.Frame):
@@ -321,7 +360,7 @@ class guideWindow(wx.Frame):
         # サイズを合わせる
         main_window_sizer.Fit(self)
         self.timer = wx.Timer(self)
-        self.timer.Start(1000. / 50)
+        self.timer.Start(1000. / 30)
         self.Bind(wx.EVT_TIMER, self.paint)
         self.SetSizer(main_window_sizer)
         self.ShowFullScreen(True)
@@ -335,18 +374,24 @@ class guideWindow(wx.Frame):
             self.display_index = (self.parent_display_index + 1) % 2
 
             self.parent_display = wx.Display(self.parent_display_index)
-            _, _, parent_display_w, parent_display_h = self.parent_display.GetGeometry()
+            (_, _,
+             parent_display_w,
+             parent_display_h) = self.parent_display.GetGeometry()
             self.guide_display = wx.Display(self.display_index)
-            _, _, self.guide_display_w, self.guide_display_h = self.guide_display.GetGeometry()
+            (_, _,
+             self.guide_display_w,
+             self.guide_display_h) = self.guide_display.GetGeometry()
 
             parent_position_x, parent_position_y = parent.GetPosition()
 
             if parent_display_w > parent_position_x:
                 self.SetPosition(
-                    (int(parent_display_w + (self.guide_display_w / 2)), int(self.guide_display_h / 2)))
+                    (int(parent_display_w + (self.guide_display_w / 2)),
+                     int(self.guide_display_h / 2)))
             else:
                 self.SetPosition(
-                    (int(self.guide_display_w / 2), int(self.guide_display_h / 2)))
+                    (int(self.guide_display_w / 2),
+                     int(self.guide_display_h / 2)))
 
 
 def main():
