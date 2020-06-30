@@ -55,7 +55,7 @@ class MainWindow(wx.Frame):
         self.guide_window.Show()
         self.line_detector = linedetector.LineDitector()
         # カメラ
-        self.camera = cv2.VideoCapture(1)
+        self.camera = cv2.VideoCapture(0)
 
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
@@ -168,7 +168,7 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.color = False
             self.guide_window.guide_panel.Refresh()
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
-            self.line_detector.SetSrcImage(img=self.warp_frame)
+            self.line_detector.SetBeforeImage(img=self.warp_frame)
 
         else:
             self.ok_button.SetBackgroundColour('#ffffff')
