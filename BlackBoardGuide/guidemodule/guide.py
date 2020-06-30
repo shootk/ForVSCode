@@ -125,18 +125,19 @@ class FigureGuides():
 
     def set_guides(self):
         self.guides_parts['no'] = ([], [])
+        """
         self.guides_parts['isosceles_triangle'] = (
             ['bisector'], ['left', 'right'])
 
-       self.guides_parts['right_triangle'] = (
-           ['vertical_L', 'vertical_R'], ['middle'])
+        self.guides_parts['right_triangle'] = (
+            ['vertical_L', 'vertical_R'], ['middle'])
 
-      self.guides_parts['rectangle'] = (
-          ['vertical_L', 'vertical_R'], [])
+        self.guides_parts['rectangle'] = (
+            ['vertical_L', 'vertical_R'], [])
 
-      self.guides_parts['circle'] = (
-          [], ['left', 'right'])
-
+        self.guides_parts['circle'] = (
+            [], ['left', 'right'])
+        """
         self.guides_parts['all'] = (
             ['bisector', 'vertical_L', 'vertical_R'],
             ['left', 'right', 'middle'])
