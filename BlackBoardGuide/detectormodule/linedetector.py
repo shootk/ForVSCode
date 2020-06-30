@@ -14,10 +14,10 @@ class LineDitector():
         self.ditect_high_white = np.array([
             190, 220, 190])
 
-    def SetSrcImage(self, img):
+    def SetBeforeImage(self, img):
         self.before_drawline_image = img
 
-    def SetDstImage(self, img):
+    def SetAfterImage(self, img):
         self.after_drawline_image = img
 
     def SetColor(self, color):
@@ -71,6 +71,12 @@ class LineDitector():
         if edge is not None:
             lines = self.DetectLine(edge)
             line = self.GetLongestLine(lines)
+            cv2.imwrite('images/before.img', self.before_drawline_image)
+            cv2.imwrite('images/after.img', self.after_drawline_image)
+            cv2.imwrite('images/diff.img', diff)
+            cv2.imwrite('images/white.img', white)
+            cv2.imwrite('images/same.img', same)
+            cv2.imwrite('images/edge.img', edge)
             return line
 
         else:

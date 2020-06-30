@@ -47,7 +47,6 @@ class MainWindow(wx.Frame):
         # 継承
         wx.Frame.__init__(self, None)
         self.Title = "webcam"
-
         # ガイドを表示するウィンドウを作成，表示
         self.guide_window = guideWindow(self)
         self.guide_window.Show()
@@ -202,7 +201,7 @@ class MainWindow(wx.Frame):
             dst_pts = self.calibrate_points
             mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
-            self.line_detector.SetSrcImage(img=self.warp_frame)
+            self.line_detector.SetBeforeImage(img=self.warp_frame)
 
     def MouseRightUp(self, e):
         if self.selection:
@@ -214,7 +213,7 @@ class MainWindow(wx.Frame):
             dst_pts = self.calibrate_points
             mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
             self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
-            self.line_detector.SetDstImage(img=self.warp_frame)
+            self.line_detector.SetAfterImage(img=self.warp_frame)
             self.line_ditecting()
 
     def MouseWheel(self, e):
