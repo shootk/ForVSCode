@@ -13,6 +13,7 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
 
 
 class WebcamPanel(wx.Panel):
+    # Webカメラの入力画像を移すパネル
     def __init__(self, parent, frame):
         '''
         Paramaters
@@ -20,17 +21,18 @@ class WebcamPanel(wx.Panel):
         parent : wd.Frame
         frame : Mat
         '''
-        # Webカメラの入力画像を移すパネルの初期設定をオーバーライティング
+        # 初期設定をオーバーライティング
         wx.Panel.__init__(self, parent)
         # 入力画像の高さ,幅を取得
         height, width = frame.shape[:2]
-        # 入力画像をRGBの並びに変換、ビットマップ化する
+        # 入力画像をRGBの並びに変換
+        # ビットマップ化
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self.bmp = wx.BitmapFromBuffer(width, height, frame)
-        # 入力画像の高さ、幅に合わせる
+        # 入力画像の高さ、幅にサイズ調整
         self.SetSize((width, height))
 
-        #
+        # Panel上のイベントに対して、関数を設定
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
         self.Bind(wx.EVT_LEFT_UP, parent.MouseLeftUp)
@@ -38,6 +40,7 @@ class WebcamPanel(wx.Panel):
         self.Bind(wx.EVT_MOUSEWHEEL, parent.MouseWheel)
 
     def OnPaint(self, e):
+        # 描画時の処理
         dc = wx.BufferedPaintDC(self)
         dc.DrawBitmap(self.bmp, 0, 0)
 
