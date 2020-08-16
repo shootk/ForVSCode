@@ -1,9 +1,16 @@
+"""
+MainWindow
+-WebcamPanel
+-GuideWindow
+-GuidePanel
+"""
+
 import wx
 import cv2
 import time
 import numpy as np
-from guidemodule import guide
-from detectormodule import linedetector
+from guide_module.guide import FigureGuides
+from detector_module.linedetector import LineDitector
 import concurrent.futures
 
 
@@ -13,23 +20,44 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
 
 
 class WebcamPanel(wx.Panel):
-    def __init__(self, parent, frame):  # fps15くらいが目安
+    def __init__(self, parent, camera, fps=15):
         wx.Panel.__init__(self, parent)
 
+        self.camera = camera
+        ret, frame = self.camera.read()
+
         height, width = frame.shape[:2]
+        self.SetSize((width, height))
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self.bmp = wx.BitmapFromBuffer(width, height, frame)
 
-        self.SetSize((width, height))
+        self.calibrate_points = np.int32(
+            [(0, 0), (0, height - 1), (width - 1, height - 1), (width - 1, 0)])
 
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
-        self.Bind(wx.EVT_LEFT_DOWN, parent.MouseDown)
-        self.Bind(wx.EVT_LEFT_UP, parent.MouseLeftUp)
-        self.Bind(wx.EVT_RIGHT_UP, parent.MouseRightUp)
-        self.Bind(wx.EVT_MOUSEWHEEL, parent.MouseWheel)
+        self.timer = wx.Timer(self)
+        self.timer.Start(1000. / fps)
 
-    def OnPaint(self, e):
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_TIMER, self.next_frame)
+        self.Bind(wx.EVT_LEFT_DOWN, parent.mouse_down)
+        self.Bind(wx.EVT_LEFT_UP, parent.mouse_left_up)
+        self.Bind(wx.EVT_RIGHT_UP, parent.mouse_right_up)
+        self.Bind(wx.EVT_MOUSEWHEEL, parent.mouse_wheel)
+
+    def next_frame(self, e):  # カメラ画像書き換え
+        return_value, frame = self.camera.read()
+        if return_value:
+            for i in range(len(self.calibrate_points)):
+                cv2.line(frame,
+                         tuple(self.calibrate_points[i % 4]),
+                         tuple(self.calibrate_points[(i + 1) % 4]),
+                         (187, 111, 0))
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            self.bmp.CopyFromBuffer(frame)
+            self.Refresh()
+
+    def on_paint(self, e):
         dc = wx.BufferedPaintDC(self)
         dc.DrawBitmap(self.bmp, 0, 0)
 
@@ -41,40 +69,38 @@ class MainWindow(wx.Frame):
         self.Title = "webcam"
 
         # ガイドを表示するウィンドウを作成，表示
-        self.guide_window = guideWindow(self)
+        self.guide_window = GuideWindow(self)
         self.guide_window.Show()
-        self.line_detector = linedetector.LineDitector()
+        self.line_detector = LineDitector()
         # カメラ
-        self.camera = cv2.VideoCapture(1)
+        self.camera = cv2.VideoCapture(0)
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
         # カメラパネル
-        self.webcampanel = WebcamPanel(self, frame)
+        self.webcampanel = WebcamPanel(self, self.camera, fps=10)
 
         # ボタン配置，キャリブレーション設定
         self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
         self.do_calibrate = False
-        self.calibrate_points = np.float32(
-            [(0, 0), (0, height - 1), (width - 1, height - 1), (width - 1, 0)])
-        self.calibration_button.Bind(wx.EVT_BUTTON, self.CalibStateChange)
+        self.calibration_button.Bind(wx.EVT_BUTTON, self.calib_state_change)
         self.calibration_button.SetBackgroundColour('#ffffff')
 
         self.color_set_button = wx.Button(self, wx.ID_ANY, 'チョーク色取得')
         self.do_color_set = False
         self.choke_color = (255, 255, 255)
-        self.color_set_button.Bind(wx.EVT_BUTTON, self.SetColorStateChange)
+        self.color_set_button.Bind(wx.EVT_BUTTON, self.set_color_state_change)
         self.color_set_button.SetBackgroundColour('#ffffff')
 
         self.cancel_button = wx.Button(self, wx.ID_ANY, 'CANCEL')
         self.cancel_button.SetBackgroundColour('#ffffff')
         self.cancel_button.Disable()
-        self.cancel_button.Bind(wx.EVT_BUTTON, self.SelectChange)
+        self.cancel_button.Bind(wx.EVT_BUTTON, self.state_change)
 
         self.ok_button = wx.Button(self, wx.ID_ANY, 'OK')
         self.ok_button.SetBackgroundColour('#ffffff')
-        self.ok_button.Bind(wx.EVT_BUTTON, self.SelectChange)
+        self.ok_button.Bind(wx.EVT_BUTTON, self.state_change)
 
-        self.selection = False
+        self.is_detecting = False
 
         self.do = True
 
@@ -96,22 +122,17 @@ class MainWindow(wx.Frame):
         main_window_sizer.Fit(self)
         self.SetSizer(main_window_sizer)
 
-        # カメラの画像を再描画する関数を呼び出す間隔を設定
-        self.timer = wx.Timer(self)
-        self.timer.Start(1000. / 15)
-        self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
-
-    def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
+    def do_calibrate(self):
         return_value, frame = self.camera.read()
-        if return_value:
-            for i in range(len(self.calibrate_points)):
-                cv2.line(
-                    frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (187, 111, 0))
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            self.webcampanel.bmp.CopyFromBuffer(frame)
-        self.webcampanel.Refresh()
+        guide_display = wx.Display(self.guide_window.display_index)
+        _, _, w, h = guide_display.GetGeometry()
+        src_pts = np.array(
+            [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.int32)
+        dst_pts = self.webcampanel.calibrate_points
+        perspective = cv2.getPerspectiveTransform(dst_pts, src_pts)
+        return cv2.warpPerspective(frame, perspective, (w, h))
 
-    def CalibStateChange(self, e):  # キャリブレーション状態切替
+    def calib_state_change(self, e):  # キャリブレーション状態切替
         self.do_calibrate = not self.do_calibrate
         self.do_color_set = False
         self.color_set_button.SetBackgroundColour('#ffffff')
@@ -122,7 +143,7 @@ class MainWindow(wx.Frame):
         else:
             self.calibration_button.SetBackgroundColour('#ffffff')
 
-    def SetColorStateChange(self, e):  # チョーク色取得状態切替
+    def set_color_state_change(self, e):  # チョーク色取得状態切替
         self.do_color_set = not self.do_color_set
         self.do_calibrate = False
         self.calibration_button.SetBackgroundColour('#ffffff')
@@ -133,9 +154,9 @@ class MainWindow(wx.Frame):
         else:
             self.color_set_button.SetBackgroundColour('#ffffff')
 
-    def SelectChange(self, e):
-        self.selection = not self.selection
-        if self.selection:
+    def state_change(self, e):
+        self.is_detecting = not self.is_detecting
+        if self.is_detecting:
             self.ok_button.SetBackgroundColour('#74e69d')
             self.calibration_button.SetBackgroundColour('#ffffff')
             self.do_calibrate = False
@@ -147,17 +168,10 @@ class MainWindow(wx.Frame):
             self.calibration_button.Disable()
             self.cancel_button.Enable()
             self.line_detector.SetColor(self.choke_color)
-            return_value, frame = self.camera.read()
-            guide_display = wx.Display(self.guide_window.display_index)
-            _, _, w, h = guide_display.GetGeometry()
-            src_pts = np.array(
-                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
-            dst_pts = self.calibrate_points
-            mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
+            warp_frame = self.do_calibrate()
             self.guide_window.guide_panel.color = False
             self.guide_window.guide_panel.Refresh()
-            self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
-            self.line_detector.SetSrcImage(img=self.warp_frame)
+            self.line_detector.SetSrcImage(img=warp_frame)
 
         else:
             self.ok_button.SetBackgroundColour('#ffffff')
@@ -166,11 +180,11 @@ class MainWindow(wx.Frame):
             self.calibration_button.Enable()
             self.cancel_button.Disable()
 
-    def MouseDown(self, e):  # マウスが押されたらその地点の座標を取得
+    def mouse_down(self, e):  # マウスが押されたらその地点の座標を取得
         if self.do_calibrate:
             self.src_pt = (e.X, e.Y)
 
-    def MouseLeftUp(self, e):  # マウスが離されたらその座標を取得
+    def mouse_left_up(self, e):  # マウスが離されたらその座標を取得
         if self.do_calibrate:
             self.dst_pt = (e.X, e.Y)
             self.calibrate()
@@ -184,31 +198,17 @@ class MainWindow(wx.Frame):
                 self.color_set_button.SetBackgroundColour(
                     tuple(frame[e.Y, e.X]))
 
-        elif self.selection:
-            return_value, frame = self.camera.read()
-            guide_display = wx.Display(self.guide_window.display_index)
-            _, _, w, h = guide_display.GetGeometry()
-            src_pts = np.array(
-                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
-            dst_pts = self.calibrate_points
-            mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
-            self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
-            self.line_detector.SetSrcImage(img=self.warp_frame)
+        elif self.is_detecting:
+            warp_frame = self.do_calibrate()
+            self.line_detector.SetSrcImage(img=warp_frame)
 
-    def MouseRightUp(self, e):
-        if self.selection:
-            return_value, frame = self.camera.read()
-            guide_display = wx.Display(self.guide_window.display_index)
-            _, _, w, h = guide_display.GetGeometry()
-            src_pts = np.array(
-                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
-            dst_pts = self.calibrate_points
-            mat = cv2.getPerspectiveTransform(dst_pts, src_pts)
-            self.warp_frame = cv2.warpPerspective(frame, mat, (w, h))
-            self.line_detector.SetDstImage(img=self.warp_frame)
+    def mouse_right_up(self, e):
+        if self.is_detecting:
+            warp_frame = self.do_calibrate()
+            self.line_detector.SetDstImage(img=warp_frame)
             self.line_ditecting()
 
-    def MouseWheel(self, e):
+    def mouse_wheel(self, e):
         if self.do:
             self.do = False
             self.guide_window.guide_panel.key_num += 1
@@ -222,37 +222,37 @@ class MainWindow(wx.Frame):
         src_pts = np.float32(
             [self.src_pt, self.src_pt, self.src_pt, self.src_pt])
         # 現在の検出範囲4点のx,y座標とマウスが押されたx,y座標との差
-        check_array = self.calibrate_points - src_pts
+        check_array = self.webcampanel.calibrate_points - src_pts
         # chack_arrayで求めたx,y座標からマウスが押された点と検出範囲の4角との距離を計算
         distance = np.sum(np.square(check_array), axis=1)
         # 一番短い距離となった配列番号を取得
         min_index = np.argmin(distance)
         # 上で求めた配列番号の点をマウスが離された点に変更
-        self.calibrate_points[min_index] = self.dst_pt
+        self.webcampanel.calibrate_points[min_index] = self.dst_pt
 
     def line_ditecting(self):
-        detected_line = self.line_detector.DoDetecting()
+        detected_line = self.line_detector.doDetecting()
         self.guide_window.guide_panel.set_guide(detected_line)
         self.guide_window.guide_panel.Refresh()
 
 
-class guidePanel(wx.Panel):
+class GuidePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         guide_display = wx.Display(parent.display_index)
         _, _, width, height = guide_display.GetGeometry()
-        self.figure_guides = guide.FigureGuides()
+        self.figure_guides = FigureGuides()
         self.guide_key = list(self.figure_guides.guides_parts.keys())
         self.color = True
         self.key_num = self.guide_key.index('no')
         self.SetSize(width, height)
-        self.bmp = wx.EmptyBitmap(width, height, -1)
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.bmp = wx.Bitmap(width, height, -1)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
 
     def set_guide(self, line):
         self.figure_guides.set_line(line)
 
-    def OnPaint(self, e):
+    def on_paint(self, e):
         dc = wx.BufferedPaintDC(self)
         if self.color:
             dc.SetBackground(wx.Brush('white'))
@@ -277,13 +277,13 @@ class guidePanel(wx.Panel):
             dc.DrawCircle(center[0], center[1], radius)
 
 
-class guideWindow(wx.Frame):
+class GuideWindow(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self, parent)
         self.Maximize(True)
         self.display_index = 0
         self.switch_window(parent)
-        self.guide_panel = guidePanel(self)
+        self.guide_panel = GuidePanel(self)
         self.guide_panel.Refresh()
 
         main_window_sizer = wx.BoxSizer(wx.HORIZONTAL)

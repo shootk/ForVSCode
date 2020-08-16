@@ -1,6 +1,7 @@
 import wx
 import cv2
 import time
+from datetime import datetime as dt
 import numpy as np
 from guidemodule import guide
 from detectormodule import linedetector
@@ -56,6 +57,13 @@ class MainWindow(wx.Frame):
         self.line_detector = linedetector.LineDitector()
         # カメラ
         self.camera = cv2.VideoCapture(0)
+        fps = int(1000. / 30)
+        w = int(self.camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+        h = int(self.camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+        date = dt.now().strftime('%Y-%m-%d-%H-%M-%S')
+        self.video = cv2.VideoWriter(
+            'video/' + str(date) + '.mp4', fourcc, fps, (w, h))
 
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
@@ -109,18 +117,21 @@ class MainWindow(wx.Frame):
 
         # カメラの画像を再描画する関数を呼び出す間隔を設定
         self.timer = wx.Timer(self)
-        self.timer.Start(1000. / 15)
+        self.timer.Start(1000. / 30)
         self.Bind(wx.EVT_TIMER, self.WebcamPanelNextFrame)
 
     def WebcamPanelNextFrame(self, e):  # カメラ画像書き換え
         return_value, frame = self.camera.read()
-        if return_value:
+        if return_value and self.do_calibrate:
             for i in range(len(self.calibrate_points)):
                 cv2.line(
                     frame, tuple(self.calibrate_points[i % 4]), tuple(self.calibrate_points[(i + 1) % 4]), (187, 111, 0))
+
+        if return_value:
+            self.video.write(frame)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.webcampanel.bmp.CopyFromBuffer(frame)
-        self.webcampanel.Refresh()
+            self.webcampanel.Refresh()
 
     def CalibStateChange(self, e):  # キャリブレーション状態切替
         self.do_calibrate = not self.do_calibrate
@@ -226,7 +237,7 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.key_num %= len(
                 self.guide_window.guide_panel.guide_key)
             self.guide_window.guide_panel.Refresh()
-            time.sleep(0.3)
+            time.sleep(0.15)
             self.do = True
 
     def calibrate(self):
