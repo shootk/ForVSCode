@@ -30,13 +30,13 @@ class WebcamPanel(wx.Panel):
         self.SetSize((width, height))
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        self.bmp = wx.BitmapFromBuffer(width, height, frame)
+        self.bmp = wx.Bitmap.FromBuffer(width, height, frame)
 
         self.calibrate_points = np.int32(
             [(0, 0), (0, height - 1), (width - 1, height - 1), (width - 1, 0)])
 
         self.timer = wx.Timer(self)
-        self.timer.Start(1000. / fps)
+        self.timer.Start(int(1000. / fps))
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_TIMER, self.next_frame)
@@ -67,7 +67,10 @@ class MainWindow(wx.Frame):
         # 継承
         wx.Frame.__init__(self, None)
         self.Title = "webcam"
-
+        self.NONE_STATE = 0
+        self.CALIBRATION = 1
+        self.SET_COLOR = 2
+        self.GUIDE = 3
         # ガイドを表示するウィンドウを作成，表示
         self.guide_window = GuideWindow(self)
         self.guide_window.Show()
@@ -102,8 +105,6 @@ class MainWindow(wx.Frame):
 
         self.is_detecting = False
 
-        self.do = True
-
         button_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_box_sizer.Add(self.cancel_button, 1, wx.EXPAND)
         button_box_sizer.Add(self.calibration_button,
@@ -122,7 +123,7 @@ class MainWindow(wx.Frame):
         main_window_sizer.Fit(self)
         self.SetSizer(main_window_sizer)
 
-    def do_calibrate(self):
+    def do_calibration(self):
         return_value, frame = self.camera.read()
         guide_display = wx.Display(self.guide_window.display_index)
         _, _, w, h = guide_display.GetGeometry()
@@ -167,11 +168,11 @@ class MainWindow(wx.Frame):
             self.color_set_button.Disable()
             self.calibration_button.Disable()
             self.cancel_button.Enable()
-            self.line_detector.SetColor(self.choke_color)
-            warp_frame = self.do_calibrate()
+            self.line_detector.set_color(self.choke_color)
+            warp_frame = self.do_calibration()
             self.guide_window.guide_panel.color = False
             self.guide_window.guide_panel.Refresh()
-            self.line_detector.SetSrcImage(img=warp_frame)
+            self.line_detector.set_before_image(img=warp_frame)
 
         else:
             self.ok_button.SetBackgroundColour('#ffffff')
@@ -200,12 +201,12 @@ class MainWindow(wx.Frame):
 
         elif self.is_detecting:
             warp_frame = self.do_calibrate()
-            self.line_detector.SetSrcImage(img=warp_frame)
+            self.line_detector.set_before_image(img=warp_frame)
 
     def mouse_right_up(self, e):
         if self.is_detecting:
             warp_frame = self.do_calibrate()
-            self.line_detector.SetDstImage(img=warp_frame)
+            self.line_detector.set_after_image(img=warp_frame)
             self.line_ditecting()
 
     def mouse_wheel(self, e):
