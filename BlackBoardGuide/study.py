@@ -3,11 +3,14 @@ MainWindow
 -WebcamPanel
 -GuideWindow
 -GuidePanel
+
+機能
+キャリブレーション
+    -
 """
 
 import wx
 import cv2
-import time
 import numpy as np
 from guide_module.guide import FigureGuides
 from detector_module.linedetector import LineDitector
@@ -17,6 +20,38 @@ import concurrent.futures
 class MyThread(concurrent.futures.ProcessPoolExecutor):
     def __init__(self):
         super(MyThread, self).__init__()
+
+
+class ModeVariable():
+    def __init__(self, mode_list, has_none=True, initial_mode='none'):
+        self.MODE_NUMBER = len(mode_list)
+        self.mode_list = []
+        if has_none:
+            self.MODE_NUMBER += 1
+            self.mode_list.append('none')
+        self.mode_list.append(mode_list)
+        self.__mode = initial_mode
+
+    @property
+    def mode(self):
+        return self.__mode
+
+    @mode.setter
+    def mode(self, mode):
+        if type(mode) == str:
+            if mode in self.mode_list:
+                self.__mode = mode
+            else:
+                self.__mode = self.mode_list[0]
+                raise TypeError(
+                    'Mode does not exist. Mode is changed to', self.__mode)
+        elif type(mode) == int:
+            if mode <= self.MODE_NUMBER:
+                self.__mode = self.mode_list[mode]
+            else:
+                self.__mode = self.mode_list[0]
+                raise TypeError(
+                    'Mode index out of length. Mode is changed to', self.__mode)
 
 
 class WebcamPanel(wx.Panel):
@@ -70,7 +105,8 @@ class MainWindow(wx.Frame):
         self.NONE_STATE = 0
         self.CALIBRATION = 1
         self.SET_COLOR = 2
-        self.GUIDE = 3
+        self.FIGURE = 3
+        self.running_state = self.NONE_STATE
         # ガイドを表示するウィンドウを作成，表示
         self.guide_window = GuideWindow(self)
         self.guide_window.Show()
@@ -84,12 +120,10 @@ class MainWindow(wx.Frame):
 
         # ボタン配置，キャリブレーション設定
         self.calibration_button = wx.Button(self, wx.ID_ANY, '範囲設定')
-        self.do_calibrate = False
         self.calibration_button.Bind(wx.EVT_BUTTON, self.calib_state_change)
         self.calibration_button.SetBackgroundColour('#ffffff')
 
         self.color_set_button = wx.Button(self, wx.ID_ANY, 'チョーク色取得')
-        self.do_color_set = False
         self.choke_color = (255, 255, 255)
         self.color_set_button.Bind(wx.EVT_BUTTON, self.set_color_state_change)
         self.color_set_button.SetBackgroundColour('#ffffff')
@@ -102,8 +136,6 @@ class MainWindow(wx.Frame):
         self.ok_button = wx.Button(self, wx.ID_ANY, 'OK')
         self.ok_button.SetBackgroundColour('#ffffff')
         self.ok_button.Bind(wx.EVT_BUTTON, self.state_change)
-
-        self.is_detecting = False
 
         button_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_box_sizer.Add(self.cancel_button, 1, wx.EXPAND)
@@ -134,14 +166,14 @@ class MainWindow(wx.Frame):
         return cv2.warpPerspective(frame, perspective, (w, h))
 
     def calib_state_change(self, e):  # キャリブレーション状態切替
-        self.do_calibrate = not self.do_calibrate
-        self.do_color_set = False
         self.color_set_button.SetBackgroundColour('#ffffff')
-        if self.do_calibrate:
+        if self.running_state != self.CALIBRATION:
+            self.running_state = self.CALIBRATION
             self.calibration_button.SetBackgroundColour('#6fbbee')
             self.guide_window.guide_panel.color = True
             self.guide_window.guide_panel.Refresh()
         else:
+            self.running_state = self.NONE_STATE
             self.calibration_button.SetBackgroundColour('#ffffff')
 
     def set_color_state_change(self, e):  # チョーク色取得状態切替
@@ -188,7 +220,8 @@ class MainWindow(wx.Frame):
     def mouse_left_up(self, e):  # マウスが離されたらその座標を取得
         if self.do_calibrate:
             self.dst_pt = (e.X, e.Y)
-            self.calibrate()
+            min_index = self.get_near_point()
+            self.webcampanel.calibrate_points[min_index] = self.dst_pt
 
         elif self.do_color_set:
             return_value, frame = self.camera.read()
@@ -218,9 +251,9 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.Refresh()
             self.do = True
 
-    def calibrate(self):
+    def get_near_point(self):
         # マウスが押された点を要素とする長さ4の配列
-        src_pts = np.float32(
+        src_pts = np.int32(
             [self.src_pt, self.src_pt, self.src_pt, self.src_pt])
         # 現在の検出範囲4点のx,y座標とマウスが押されたx,y座標との差
         check_array = self.webcampanel.calibrate_points - src_pts
@@ -229,7 +262,7 @@ class MainWindow(wx.Frame):
         # 一番短い距離となった配列番号を取得
         min_index = np.argmin(distance)
         # 上で求めた配列番号の点をマウスが離された点に変更
-        self.webcampanel.calibrate_points[min_index] = self.dst_pt
+        return min_index
 
     def line_ditecting(self):
         detected_line = self.line_detector.doDetecting()
