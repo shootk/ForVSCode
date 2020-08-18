@@ -7,67 +7,132 @@ import math
 
 class Point():
     def __init__(self, x=0, y=0):
-        self.X = int(x)
-        self.Y = int(y)
+        self.__coordinate = (int(x), int(y))
 
-    def change_coordinate(self, x, y):
-        self.X = int(x)
-        self.Y = int(y)
+    @property
+    def coordinate(self):
+        return self.__coordinate
+
+    @coordinate.setter
+    def coordinate(self, x, y):
+        self.__coordinate = (int(x), int(y))
+
+    @property
+    def X(self):
+        return self.__coordinate[0]
+
+    @X.setter
+    def X(self, x):
+        self.__coordinate[0] = x
+
+    @property
+    def Y(self):
+        return self.__coordinate[1]
+
+    @Y.setter
+    def Y(self, y):
+        self.__coordinate[1] = y
 
 
 class Circle():
-    def __init__(self, center=Point(0, 0), radius=10):
-        self.center = center
+    def __init__(self, center=Point(), radius=10):
+        self.__center = center
         self.radius = int(radius)
 
-    def get_center(self):
-        return (self.center.X, self.center.Y)
+    @property
+    def center(self):
+        return self.__center
+
+    @center.setter
+    def center(self, point):
+        if type(point) == Point:
+            self.__center = point
+        else:
+            raise TypeError('Point required. Get ', type(point))
 
 
 class Line():
-    def __init__(self, start=Point(-1, -1), end=Point(-1, -1)):
-        self.start = start
-        self.end = end
-        self.length = math.sqrt(
-            (self.end.X - self.start.X) ** 2 + (self.end.Y - self.start.Y) ** 2)
-        self.middle_point = Point(
-            (self.end.X + self.start.X) / 2,
-            (self.end.Y + self.start.Y) / 2)
-        self.angle_rad = math.atan2(
-            self.end.Y - self.start.Y,
-            self.end.X - self.start.X)
-        self.angle_deg = math.degrees(self.angle_rad)
+    def __init__(self, start=Point(), end=Point()):
+        self.__start = start
+        self.__end = end
+        self.__length = math.sqrt(
+            (self.__end.X - self.__start.X) ** 2 + (self.__end.Y - self.__start.Y) ** 2)
+        self.__middle_point = Point(
+            (self.__end.X + self.__start.X) / 2,
+            (self.__end.Y + self.__start.Y) / 2)
+        self.__angle_rad = math.atan2(
+            self.__end.Y - self.__start.Y,
+            self.__end.X - self.__start.X)
+        self.__angle_deg = math.degrees(self.__angle_rad)
+
+    @property
+    def start(self):
+        return self.__start
+
+    @start.setter
+    def start(self, point):
+        if type(point) == Point:
+            self.__start = point
+        else:
+            raise TypeError('Point required. Get ', type(point))
+
+    @property
+    def end(self):
+        return self.__end
+
+    @end.setter
+    def end(self, point):
+        if type(point) == Point:
+            self.__end = point
+        else:
+            raise TypeError('Point required. Get ', type(point))
+
+    @property
+    def middle_point(self):
+        return self.__middle_point
+
+    @property
+    def length(self):
+        return self.__length
+
+    @property
+    def angle_rad(self):
+        return self.__angle_rad
+
+    @property
+    def angle_deg(self):
+        return self.__angle_deg
 
     def make_from_radian(self, middle_point, rad, length):
-        self.length = length
-        self.middle_point = middle_point
-        self.angle_rad = rad
-        self.angle_deg = math.degrees(self.angle_rad)
-        self.start = Point(
+        self.__length = length
+        self.__middle_point = middle_point
+        self.__angle_rad = rad
+        self.__angle_deg = math.degrees(self.__angle_rad)
+        self.__start = Point(
             middle_point.X - math.cos(rad) * (length / 2),
             middle_point.Y - math.sin(rad) * (length / 2))
-        self.end = Point(
+        self.__end = Point(
             middle_point.X + math.cos(rad) * (length / 2),
             middle_point.Y + math.sin(rad) * (length / 2))
 
     def change_coordinate_point(self, x, y, start_or_end):
         if start_or_end == 'start':
-            self.start.change_coordinate(x, y)
+            self.__start.coordinate(x, y)
         elif start_or_end == 'end':
-            self.end.change_coordinate(x, y)
+            self.__end.coordinate(x, y)
 
-        self.length = math.sqrt(
-            (self.end.X - self.start.X) ** 2 + (self.end.Y - self.start.Y) ** 2)
-        self.middle_point = Point(
-            (self.end.X - self.start.X) / 2,
-            (self.end.Y - self.start.Y) / 2)
-        self.angle_rad = math.atan2(
-            self.end.Y - self.start.Y,
-            self.end.X - self.start.X)
-        self.angle_deg = math.degrees(self.angle_rad)
+        self.__length = math.sqrt(
+            (self.__end.X - self.__start.X) ** 2 + (self.__end.Y - self.__start.Y) ** 2)
+        self.__middle_point = Point(
+            (self.__end.X - self.__start.X) / 2,
+            (self.__end.Y - self.__start.Y) / 2)
+        self.__angle_rad = math.atan2(
+            self.__end.Y - self.__start.Y,
+            self.__end.X - self.__start.X)
+        self.__angle_deg = math.degrees(self.__angle_rad)
 
     def get_start(self):
-        return (self.start.X, self.start.Y)
+        return (self.__start.X, self.__start.Y)
 
     def get_end(self):
-        return (self.end.X, self.end.Y)
+        return (self.__end.X, self.__end.Y)

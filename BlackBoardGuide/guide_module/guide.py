@@ -1,4 +1,4 @@
-""" 
+"""
 ガイド作成用
 ガイドのパーツ設定、作成（座標等の情報をreturn）をするモジュールとして使用
 """
@@ -43,7 +43,7 @@ class GuideMaker():
         self.right_circle = Circle(base_line.end, base_line.length)
         self.circles['right'] = self.right_circle
 
-    def make_guide(self, line, linear_parts, circlear_parts):
+    def get_parts(self, line, linear_parts, circlear_parts):
         self.set_parts(line)
 
         return_lines = []
@@ -89,5 +89,5 @@ class FigureGuides():
             ['left', 'right', 'middle'])
 
     def get_guide(self, guide_key):
-        return self.maker.make_guide(
+        return self.maker.get_parts(
             self.line, self.guides_parts[guide_key][0], self.guides_parts[guide_key][1])
