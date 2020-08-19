@@ -11,9 +11,11 @@ MainWindow
 
 import wx
 import cv2
+import colorsys
 import numpy as np
 from guide_module.guide import FigureGuides
 from detector_module.linedetector import LineDitector
+from property_module.difine_property import define_property
 import concurrent.futures
 
 
@@ -23,29 +25,15 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
 
 
 class Mode():
-    def __init__(self, initial_mode='None'):
-        self.__mode_list = ['None', 'Calibration', 'Color', 'Figure', 'Grid']
+    def __init__(self, *, mode_list=[], initial_mode=None):
+        define_property(self, 'mode_list', mode_list)
+        for mode in self.__mode_list:
+            define_property(self, str(mode), mode, writable=False)
+
         if initial_mode in self.__mode_list:
-            self.__mode = initial_mode
+            define_property(self, 'mode', str(initial_mode))
         else:
-            self.__mode = 'None'
-
-    @property
-    def mode(self):
-        return self.__mode
-
-    @mode.setter
-    def mode(self, mode):
-        if mode in self.__mode_list:
-            self.__mode = mode
-        else:
-            self.__mode = 'None'
-            raise TypeError(
-                'Mode does not exist. Mode is changed to', self.__mode)
-
-    @property
-    def modes(self):
-        return self.__mode
+            define_property(self, 'mode', str(self.__mode_list[0]))
 
 
 class WebcamPanel(wx.Panel):
@@ -72,7 +60,6 @@ class WebcamPanel(wx.Panel):
         self.Bind(wx.EVT_LEFT_DOWN, parent.mouse_down)
         self.Bind(wx.EVT_LEFT_UP, parent.mouse_left_up)
         self.Bind(wx.EVT_RIGHT_UP, parent.mouse_right_up)
-        self.Bind(wx.EVT_MOUSEWHEEL, parent.mouse_wheel)
 
     def next_frame(self, e):  # カメラ画像書き換え
         return_value, frame = self.camera.read()
@@ -96,7 +83,8 @@ class MainWindow(wx.Frame):
         # 継承
         wx.Frame.__init__(self, None)
         self.Title = "webcam"
-        self.mode_controler = Mode()
+        mode_list = ['none', 'calibration', 'set_color', 'figure', 'text']
+        self.mode = Mode(mode_list=mode_list, initial_mode='None')
         # ガイドを表示するウィンドウを作成，表示
         self.guide_window = GuideWindow(self)
         self.guide_window.Show()
@@ -123,9 +111,9 @@ class MainWindow(wx.Frame):
         self.cancel_button.Disable()
         self.cancel_button.Bind(wx.EVT_BUTTON, self.state_change)
 
-        self.ok_button = wx.Button(self, wx.ID_ANY, 'ガイド')
-        self.ok_button.SetBackgroundColour('#ffffff')
-        self.ok_button.Bind(wx.EVT_BUTTON, self.state_change)
+        self.figure_button = wx.Button(self, wx.ID_ANY, '図形ガイド')
+        self.figure_button.SetBackgroundColour('#ffffff')
+        self.figure_button.Bind(wx.EVT_BUTTON, self.state_change)
 
         button_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_box_sizer.Add(self.cancel_button, 1, wx.EXPAND)
@@ -133,7 +121,7 @@ class MainWindow(wx.Frame):
                              2, wx.BOTTOM | wx.EXPAND)
         button_box_sizer.Add(self.set_color_button,
                              2, wx.BOTTOM | wx.EXPAND)
-        button_box_sizer.Add(self.ok_button, 1, wx.EXPAND)
+        button_box_sizer.Add(self.figure_button, 1, wx.EXPAND)
 
         # メインウィンドウのサイズ決定，パネル，ボタン配置
         main_window_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -145,76 +133,80 @@ class MainWindow(wx.Frame):
         main_window_sizer.Fit(self)
         self.SetSizer(main_window_sizer)
 
-    def image_calibration(self, target_pts, w, h):
+    def frame_calibration(self, target_pts, w, h):
+        # カメラ画像の特定の位置を抜き出し、指定したサイズに変換
         return_value, frame = self.camera.read()
         src_pts = np.array(
             [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.int32)
         perspective = cv2.getPerspectiveTransform(target_pts, src_pts)
         return cv2.warpPerspective(frame, perspective, (w, h))
 
-    def calib_state_change(self, e):  # キャリブレーション状態切替
-        self.set_color_button.SetBackgroundColour('#ffffff')
-        if self.running_state != self.CALIBRATION:
-            self.running_state = self.CALIBRATION
-            self.calibration_button.SetBackgroundColour('#6fbbee')
+    def button_state_change(self, mode):
+        self.calibration_button.SetBackgroundColour('#ffffff')
+        self.figure_button.SetBackgroundColour('#ffffff')
+        self.cancel_button.SetBackgroundColour('#ffffff')
+        self.cancel_button.Disable()
+
+        if self.mode.mode == "none":
+            self.set_color_button.Enable()
+            self.calibration_button.Enable()
+            self.figure_button.Enable()
+
+        elif self.mode.mode == "calibration":
+            self.calibration_button.SetBackgroundColour('##6fbbee')
+
+        elif self.mode.mode == "figure":
+            self.figure_button.SetBackgroundColour('#74e69d')
+            self.figure_button.Enable()
+            self.calibration_button.Disable()
+            self.set_color_button.Disable()
+            self.cancel_button.Enable()
+
+    def calib_state_change(self, e):
+        # キャリブレーション状態切替
+        if self.mode.mode != "calibration":
+            self.mode.mode = "calibration"
             self.guide_window.guide_panel.color = True
             self.guide_window.guide_panel.Refresh()
         else:
-            self.running_state = self.NONE_STATE
-            self.calibration_button.SetBackgroundColour('#ffffff')
+            self.mode.mode = "none"
+        self.button_state_change(self.mode.mode)
 
-    def set_color_state_change(self, e):  # チョーク色取得状態切替
-        self.do_color_set = not self.do_color_set
-        self.image_calibration = False
-        self.calibration_button.SetBackgroundColour('#ffffff')
-        if self.do_color_set:
-            self.set_color_button.SetBackgroundColour('#afbea5')
+    def set_color_state_change(self, e):
+        # チョーク色取得状態切替
+        if self.mode.mode != "set_color":
+            self.mode.mode = "set_color"
             self.guide_window.guide_panel.color = False
             self.guide_window.guide_panel.Refresh()
         else:
-            self.set_color_button.SetBackgroundColour('#ffffff')
+            self.mode.mode = "none"
+        self.button_state_change(self.mode.mode)
 
     def state_change(self, e):
-        self.is_detecting = not self.is_detecting
-        if self.is_detecting:
-            self.ok_button.SetBackgroundColour('#74e69d')
-            self.calibration_button.SetBackgroundColour('#ffffff')
-            self.image_calibration = False
-            self.set_color_button.SetBackgroundColour('#ffffff')
-            self.do_color_set = False
-
-            self.ok_button.Disable()
-            self.set_color_button.Disable()
-            self.calibration_button.Disable()
-            self.cancel_button.Enable()
-            self.line_detector.set_color(self.choke_color)
-
+        if self.mode.mode != "figure":
+            self.mode.mode = "figure"
             guide_display = wx.Display(self.guide_window.display_index)
             _, _, w, h = guide_display.GetGeometry()
-            warp_frame = self.image_calibration(
+            calibrate_frame = self.frame_calibration(
                 self.webcampanel.calibrate_points, w, h)
             self.guide_window.guide_panel.color = False
             self.guide_window.guide_panel.Refresh()
-            self.line_detector.set_before_image(img=warp_frame)
-
+            self.line_detector.set_before_image(img=calibrate_frame)
         else:
-            self.ok_button.SetBackgroundColour('#ffffff')
-            self.ok_button.Enable()
-            self.set_color_button.Enable()
-            self.calibration_button.Enable()
-            self.cancel_button.Disable()
+            self.mode.mode = "none"
+        self.button_state_change(self.mode.mode)
 
     def mouse_down(self, e):  # マウスが押されたらその地点の座標を取得
-        if self.image_calibration:
+        if self.frame_calibration:
             self.src_pt = (e.X, e.Y)
 
     def mouse_left_up(self, e):  # マウスが離されたらその座標を取得
-        if self.image_calibration:
+        if self.mode.mode == "calibration":
             self.dst_pt = (e.X, e.Y)
             min_index = self.closed_point_index()
             self.webcampanel.calibrate_points[min_index] = self.dst_pt
 
-        elif self.do_color_set:
+        elif self.mode.mode == "set_color":
             return_value, frame = self.camera.read()
             hsvframe = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV_FULL)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -223,27 +215,20 @@ class MainWindow(wx.Frame):
                 self.set_color_button.SetBackgroundColour(
                     tuple(frame[e.Y, e.X]))
 
-        elif self.is_detecting:
+        elif self.mode.mode == "figure":
             guide_display = wx.Display(self.guide_window.display_index)
             _, _, w, h = guide_display.GetGeometry()
-            warp_frame = self.image_calibration(
+            calibrate_frame = self.frame_calibration(
                 self.webcampanel.calibrate_points, w, h)
-            self.line_detector.set_before_image(img=warp_frame)
+            self.line_detector.queue(img=calibrate_frame)
 
     def mouse_right_up(self, e):
-        if self.is_detecting:
-            warp_frame = self.image_calibration()
-            self.line_detector.set_after_image(img=warp_frame)
+        if self.mode.mode == "figure":
             self.line_ditecting()
-
-    def mouse_wheel(self, e):
-        if self.do:
-            self.do = False
             self.guide_window.guide_panel.key_num += 1
             self.guide_window.guide_panel.key_num %= len(
                 self.guide_window.guide_panel.guide_key)
             self.guide_window.guide_panel.Refresh()
-            self.do = True
 
     def closed_point_index(self, pt, target_pts):
         # マウスが押された点を要素とする長さ4の配列
