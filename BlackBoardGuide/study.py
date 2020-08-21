@@ -11,7 +11,6 @@ MainWindow
 
 import wx
 import cv2
-import colorsys
 import numpy as np
 from guide_module.guide import FigureGuides
 from detector_module.linedetector import LineDitector
@@ -136,10 +135,12 @@ class MainWindow(wx.Frame):
     def frame_calibration(self, target_pts, w, h):
         # カメラ画像の特定の位置を抜き出し、指定したサイズに変換
         return_value, frame = self.camera.read()
-        src_pts = np.array(
-            [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.int32)
-        perspective = cv2.getPerspectiveTransform(target_pts, src_pts)
-        return cv2.warpPerspective(frame, perspective, (w, h))
+        if return_value:
+            dst_pts = np.array(
+                [[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]], dtype=np.float32)
+            perspective = cv2.getPerspectiveTransform(
+                target_pts.astype(np.float32), dst_pts)
+            return cv2.warpPerspective(frame, perspective, (w, h))
 
     def button_state_change(self, mode):
         self.calibration_button.SetBackgroundColour('#ffffff')
@@ -191,20 +192,21 @@ class MainWindow(wx.Frame):
                 self.webcampanel.calibrate_points, w, h)
             self.guide_window.guide_panel.color = False
             self.guide_window.guide_panel.Refresh()
-            self.line_detector.set_before_image(img=calibrate_frame)
+            self.line_detector.queue(img=calibrate_frame)
         else:
             self.mode.mode = "none"
         self.button_state_change(self.mode.mode)
 
     def mouse_down(self, e):  # マウスが押されたらその地点の座標を取得
-        if self.frame_calibration:
+        if self.mode.mode == "calibration":
             self.src_pt = (e.X, e.Y)
 
     def mouse_left_up(self, e):  # マウスが離されたらその座標を取得
         if self.mode.mode == "calibration":
-            self.dst_pt = (e.X, e.Y)
-            min_index = self.closed_point_index()
-            self.webcampanel.calibrate_points[min_index] = self.dst_pt
+            mouse_pt = (e.X, e.Y)
+            min_index = self.closed_point_index(
+                mouse_pt, self.webcampanel.calibrate_points)
+            self.webcampanel.calibrate_points[min_index] = mouse_pt
 
         elif self.mode.mode == "set_color":
             return_value, frame = self.camera.read()
@@ -232,7 +234,7 @@ class MainWindow(wx.Frame):
 
     def closed_point_index(self, pt, target_pts):
         # マウスが押された点を要素とする長さ4の配列
-        src_pts = np.full_like(pt, target_pts)
+        src_pts = np.full_like(target_pts, pt)
         # 現在の検出範囲4点のx,y座標とマウスが押されたx,y座標との差
         check_array = target_pts - src_pts
         # chack_arrayで求めたx,y座標からマウスが押された点と検出範囲の4角との距離を計算
@@ -243,7 +245,7 @@ class MainWindow(wx.Frame):
         return min_index
 
     def line_ditecting(self):
-        detected_line = self.line_detector.doDetecting()
+        detected_line = self.line_detector.do_detecting()
         self.guide_window.guide_panel.set_guide(detected_line)
         self.guide_window.guide_panel.Refresh()
 

@@ -56,7 +56,7 @@ class LineDitector():
 
     def queue(self, img):
         self.__before_drawline_image = self.__after_drawline_image
-        self.after_drawline_image(img)
+        self.__after_drawline_image = img
 
     def get_difference(self, src1_image, src2_image):
         diff = cv2.absdiff(src1_image, src2_image)
@@ -76,9 +76,10 @@ class LineDitector():
         lines = cv2.HoughLinesP(src_image, rho=1,
                                 theta=np.pi / 360, threshold=40, minLineLength=40, maxLineGap=100)
         detedted_lines = []
-        for x1, y1, x2, y2 in lines[0]:
-            line = Line(Point(x1, y1), Point(x2, y2))
-            detedted_lines.append(line)
+        if lines:
+            for x1, y1, x2, y2 in lines[0]:
+                line = Line(Point(x1, y1), Point(x2, y2))
+                detedted_lines.append(line)
         return detedted_lines
 
     def get_longest_line(self, lines):
@@ -94,11 +95,12 @@ class LineDitector():
         white = self.get_white(self.__after_drawline_image)
         same = self.get_same_part(diff, white)
         edge = self.detect_edge(same)
+        """
         self.save_picture(
             [self.__before_drawline_image,
              self.__after_drawline_image,
              diff, white, same, edge])
-
+        """
         if edge is not None:
             lines = self.detect_line(edge)
             line = self.get_longest_line(lines)
@@ -109,4 +111,4 @@ class LineDitector():
     def save_picture(self, pic_list):
         date = dt.now().strftime('%Y-%m-%d-%H-%M-%S')
         for i, picture in enumerate(pic_list):
-            cv2.imwrite('images/' + str(date) + '-' + str(i))
+            cv2.imwrite('images/' + str(date) + '-' + str(i), picture)
