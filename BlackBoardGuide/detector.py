@@ -13,26 +13,10 @@ class Detector():
     def __init__(self, width=640, height=480, color=(200, 200, 200)):
         no_image = np.zeros(
             (width, height), dtype=np.uint8)
-        self.__before_draw_image = no_image
-        self.__after_draw_image = no_image
+        define_property(self=self, name='before_draw_image', value=no_image)
+        define_property(self=self, name='after_draw_image', value=no_image)
         self.__detect_low_white = np.array([160, 160, 140])
         self.__detect_high_white = np.array([190, 220, 190])
-
-    @property
-    def before_draw_image(self):
-        return self.__before_draw_image
-
-    @before_draw_image.setter
-    def before_draw_image(self, image):
-        self.__before_draw_image = image
-
-    @property
-    def after_draw_image(self):
-        return self.__after_draw_image
-
-    @after_draw_image.setter
-    def after_draw_image(self, image):
-        self.__after_draw_image = image
 
     @property
     def detect_low_white(self):
@@ -63,8 +47,8 @@ class Detector():
             360, color[1] + 30, color[2] + 30])
 
     def queue(self, img):
-        self.__before_draw_image = self.__after_draw_image
-        self.__after_draw_image = img
+        self.before_draw_image = self.after_draw_image
+        self.after_draw_image = img
 
     def get_difference(self, src1_image, src2_image):
         diff = cv2.absdiff(src1_image, src2_image)
@@ -81,10 +65,14 @@ class Detector():
         return cv2.Canny(src_image, 70, 100, 30)
 
     def save_picture(self, pic_list):
-        date = dt.now().strftime('%Y-%m-%d/%H-%M-%S')
+        date = dt.now().strftime('%Y-%m-%d')
+        time = dt.now().strftime('%H-%M-%S')
         for i, picture in enumerate(pic_list):
-            cv2.imwrite(
-                'images/{0}-{1}.png'.format(str(date), str(i)), picture)
+            print(type(picture))
+            write_name = '/images/' + \
+                str(date) + '/' + str(time) + str(i) + '.png'
+            print(write_name)
+            cv2.imwrite(write_name, picture)
 
 
 class LineDetector(Detector):
@@ -101,10 +89,12 @@ class LineDetector(Detector):
             for x1, y1, x2, y2 in lines[0]:
                 line = Line(Point(x1, y1), Point(x2, y2))
                 detedted_lines.append(line)
+        else:
+            print('no lines')
         return detedted_lines
 
     def get_longest_line(self, lines):
-        max_line = self.__detected_line
+        max_line = self.detected_line
         for line in lines:
             if max_line.length < line.length:
                 max_line = line

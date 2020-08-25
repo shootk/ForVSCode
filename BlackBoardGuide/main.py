@@ -197,7 +197,7 @@ class MainWindow(wx.Frame):
         if self.mode.mode == "calibration":
             mouse_pt = (e.X, e.Y)
             min_index = self.closed_point_index(
-                mouse_pt, self.webcampanel.calibrate_points)
+                self.src_pt, self.webcampanel.calibrate_points)
             self.webcampanel.calibrate_points[min_index] = mouse_pt
 
         elif self.mode.mode == "set_color":
