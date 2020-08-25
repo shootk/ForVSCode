@@ -4,7 +4,7 @@
 """
 
 import math
-from figure_module.figureparts import Point, Circle, Line
+from figureparts import Point, Line, Circle
 
 
 class GuideMaker():

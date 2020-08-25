@@ -1,20 +1,9 @@
-"""
-MainWindow
--WebcamPanel
--GuideWindow
--GuidePanel
-
-機能
-キャリブレーション
-    -
-"""
-
 import wx
 import cv2
 import numpy as np
-from guide_module.guide import FigureGuides
-from detector_module.linedetector import LineDitector
-from property_module.difine_property import define_property
+from guide import FigureGuides
+from detector import LineDetector, CharacterDetector
+from define_property import define_property
 import concurrent.futures
 
 
@@ -25,7 +14,7 @@ class MyThread(concurrent.futures.ProcessPoolExecutor):
 
 class Mode():
     def __init__(self, *, mode_list=[], initial_mode=None):
-        define_property(self, 'mode_list', mode_list)
+        define_property(self, name='mode_list', value=mode_list)
         for mode in self.__mode_list:
             define_property(self, str(mode), mode, writable=False)
 
@@ -87,7 +76,9 @@ class MainWindow(wx.Frame):
         # ガイドを表示するウィンドウを作成，表示
         self.guide_window = GuideWindow(self)
         self.guide_window.Show()
-        self.line_detector = LineDitector()
+        self.line_detector = LineDetector()
+        self.chara_detector = CharacterDetector()
+
         # カメラ
         self.camera = cv2.VideoCapture(0)
         return_value, frame = self.camera.read()
@@ -193,6 +184,7 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.color = False
             self.guide_window.guide_panel.Refresh()
             self.line_detector.queue(img=calibrate_frame)
+            self.chara_detector.queue(img=calibrate_frame)
         else:
             self.mode.mode = "none"
         self.button_state_change(self.mode.mode)
@@ -213,9 +205,11 @@ class MainWindow(wx.Frame):
             hsvframe = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV_FULL)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             if return_value:
-                self.choke_color = hsvframe[e.Y, e.X]
+                choke_color = hsvframe[e.Y, e.X]
                 self.set_color_button.SetBackgroundColour(
                     tuple(frame[e.Y, e.X]))
+                self.line_detector.set_color(choke_color)
+                self.chara_detector.set_color(choke_color)
 
         elif self.mode.mode == "figure":
             guide_display = wx.Display(self.guide_window.display_index)
@@ -223,10 +217,14 @@ class MainWindow(wx.Frame):
             calibrate_frame = self.frame_calibration(
                 self.webcampanel.calibrate_points, w, h)
             self.line_detector.queue(img=calibrate_frame)
+            self.chara_detector.queue(img=calibrate_frame)
 
     def mouse_right_up(self, e):
         if self.mode.mode == "figure":
-            self.line_ditecting()
+            detected_line = self.line_detector.detect()
+            text = self.chara_detector.detect()
+            self.show_text_guide(text)
+            self.show_figure_guide(detected_line)
             self.guide_window.guide_panel.key_num += 1
             self.guide_window.guide_panel.key_num %= len(
                 self.guide_window.guide_panel.guide_key)
@@ -244,10 +242,12 @@ class MainWindow(wx.Frame):
         # 上で求めた配列番号の点をマウスが離された点に変更
         return min_index
 
-    def line_ditecting(self):
-        detected_line = self.line_detector.do_detecting()
-        self.guide_window.guide_panel.set_guide(detected_line)
+    def show_figure_guide(self, target_line):
+        self.guide_window.guide_panel.set_guide(target_line)
         self.guide_window.guide_panel.Refresh()
+
+    def show_text_guide(self, text):
+        print(str(text))
 
 
 class GuidePanel(wx.Panel):
