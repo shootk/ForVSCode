@@ -4,7 +4,7 @@
 """
 
 import math
-from figureparts import Point, Line, Circle
+from figureparts import Line, Circle
 
 
 class GuideMaker():
@@ -60,7 +60,7 @@ class GuideMaker():
 class FigureGuides():
     def __init__(self):
         self.guides_parts = {}
-        self.line = Line(Point(0, 0), Point(0, 0))
+        self.line = Line()
         self.set_guides()
         self.maker = GuideMaker()
 

@@ -40,10 +40,8 @@ class Detector():
 
     def set_color(self, color):
         self.__detect_low_white = np.array([
-            # color[0] - (color[0] % 30
             0, color[1] - 30, color[2] - 30])
         self.__detect_high_white = np.array([
-            # color[0] - (color[0] % 30) + 30
             360, color[1] + 30, color[2] + 30])
 
     def queue(self, img):
@@ -65,13 +63,9 @@ class Detector():
         return cv2.Canny(src_image, 70, 100, 30)
 
     def save_picture(self, pic_list):
-        date = dt.now().strftime('%Y-%m-%d')
-        time = dt.now().strftime('%H-%M-%S')
+        date = dt.now().strftime('%Y-%m-%d-%H-%M-%S')
         for i, picture in enumerate(pic_list):
-            print(type(picture))
-            write_name = '/images/' + \
-                str(date) + '/' + str(time) + str(i) + '.png'
-            print(write_name)
+            write_name = './images/' + str(date) + str(i) + '.png'
             cv2.imwrite(write_name, picture)
 
 
@@ -113,9 +107,8 @@ class LineDetector(Detector):
             self.detect_high_white)
         same = self.get_same_part(diff, white)
         edge = self.get_edge(same)
-        self.save_picture(
-            [before_image, after_image,
-             diff, white, same, edge])
+        save_list = [before_image, after_image, diff, white, same, edge]
+        self.save_picture(save_list)
         if edge is not None:
             lines = self.get_lines(edge)
             line = self.get_longest_line(lines)
@@ -139,6 +132,7 @@ class CharacterDetector(Detector):
             sys.exit("No OCR tool found")
         define_property(self, name='ocr_tool',
                         value=tools[0], writable=False)
+        define_property(self=self, name='detect_texts')
 
     def detect(self, before_image=None, after_image=None, language='jpn'):
         if (before_image is None) or (after_image is None):
@@ -154,11 +148,23 @@ class CharacterDetector(Detector):
         same = self.get_same_part(diff, white)
         inverse = cv2.bitwise_not(same)
         target_image = Image.fromarray(inverse)
-        detect_text = self.ocr_tool.image_to_string(
+        builder = pyocr.tesseract.CharBoxBuilder()
+        detect_texts = self.ocr_tool.image_to_string(
             image=target_image,
             lang=language,
-            builder=pyocr.builders.TextBuilder(tesseract_layout=6))
-        self.save_picture(
-            [before_image, after_image,
-             diff, white, same, inverse])
-        return detect_text
+            builder=builder)
+        save_list = [before_image, after_image, diff, white, same, inverse]
+        self.save_picture(save_list)
+        self.detect_texts = detect_texts
+        return detect_texts
+
+    def arrange_coordinate(self, detect_texts=None, *, height):
+        return_list = []
+        for box in detect_texts:
+            # box.position は左下を原点とした ((min-x, min-y), (max-x, max-y)) らしい。
+            # ここでは左上を原点とした x, y, width, height に変換してみる
+            x = box.position[0][0]
+            y = height - box.position[1][1]
+            width = box.position[1][0] - x
+            height = height - box.position[0][1] - y
+            return_list.append((x, y), (width, height))
