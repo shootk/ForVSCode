@@ -4,44 +4,45 @@
 """
 
 import math
-from figureparts import Point, Line, Circle
+from figureparts import Line, Circle, TextBox
+from define_property import define_property
 
 
-class GuideMaker():
+class FigureGuideMaker():
     def set_parts(self, base_line):
-        self.lines = {}
-        self.circles = {}
+        self.__lines = {}
+        self.__circles = {}
 
-        self.vertical_bisector = Line()
-        self.vertical_bisector.make_from_radian(
+        perpendicular_bisector = Line()
+        perpendicular_bisector.make_from_radian(
             base_line.middle_point,
             base_line.angle_rad + math.radians(90),
             base_line.length * 3)
-        self.lines['bisector'] = self.vertical_bisector
+        self.__lines['bisector'] = perpendicular_bisector
 
-        self.vertical_line_1 = Line()
-        self.vertical_line_1.make_from_radian(
+        perpendicular_line_L = Line()
+        perpendicular_line_L.make_from_radian(
             base_line.start,
             base_line.angle_rad + math.radians(90),
             base_line.length * 3)
-        self.lines['vertical_L'] = self.vertical_line_1
+        self.__lines['perpendicular_L'] = perpendicular_line_L
 
-        self.vertical_line_2 = Line()
-        self.vertical_line_2.make_from_radian(
+        perpendicular_line_R = Line()
+        perpendicular_line_R.make_from_radian(
             base_line.end,
             base_line.angle_rad + math.radians(90),
             base_line.length * 3)
-        self.lines['vertical_R'] = self.vertical_line_2
+        self.__lines['perpendicular_R'] = perpendicular_line_R
 
-        self.middle_circle = Circle(
+        middle_circle = Circle(
             base_line.middle_point, base_line.length / 2)
-        self.circles['middle'] = self.middle_circle
+        self.__circles['middle'] = middle_circle
 
-        self.left_circle = Circle(base_line.start, base_line.length)
-        self.circles['left'] = self.left_circle
+        left_circle = Circle(base_line.start, base_line.length)
+        self.__circles['left'] = left_circle
 
-        self.right_circle = Circle(base_line.end, base_line.length)
-        self.circles['right'] = self.right_circle
+        right_circle = Circle(base_line.end, base_line.length)
+        self.__circles['right'] = right_circle
 
     def get_parts(self, line, linear_parts, circlear_parts):
         self.set_parts(line)
@@ -50,44 +51,135 @@ class GuideMaker():
         return_circles = []
 
         for key in linear_parts:
-            return_lines.append(self.lines[key])
+            return_lines.append(self.__lines[key])
 
         for key in circlear_parts:
-            return_circles.append(self.circles[key])
+            return_circles.append(self.__circles[key])
         return return_lines, return_circles
 
 
-class FigureGuides():
+class FigureGuide():
     def __init__(self):
-        self.guides_parts = {}
-        self.line = Line(Point(0, 0), Point(0, 0))
-        self.set_guides()
-        self.maker = GuideMaker()
+        self.__guide_mode = {}
+        define_property(self, name='line', value=Line())
+        self._set_guide_mode()
+        self.__maker = FigureGuideMaker()
 
-    def set_line(self, line):
-        self.line = line
+    @property
+    def guide_mode(self):
+        return self.__guide_mode
 
-    def set_guides(self):
-        self.guides_parts['no'] = ([], [])
+    def _set_guide_mode(self):
+        self.__guide_mode['no'] = ([], [])
         """
         ガイドを一括表示のみにするためコメントアウト
         必要になり次第コメント解除
-        self.guides_parts['isosceles_triangle'] = (
+        self.__guide_mode['isosceles_triangle'] = (
             ['bisector'], ['left', 'right'])
 
-        self.guides_parts['right_triangle'] = (
-            ['vertical_L', 'vertical_R'], ['middle'])
+        self.__guide_mode['right_triangle'] = (
+            ['perpendicular_L', 'perpendicular_R'], ['middle'])
 
-        self.guides_parts['rectangle'] = (
-            ['vertical_L', 'vertical_R'], [])
+        self.__guide_mode['rectangle'] = (
+            ['perpendicular_L', 'perpendicular_R'], [])
 
-        self.guides_parts['circle'] = (
+        self.__guide_mode['circle'] = (
             [], ['left', 'right'])
         """
-        self.guides_parts['all'] = (
-            ['bisector', 'vertical_L', 'vertical_R'],
+        self.__guide_mode['all'] = (
+            ['bisector', 'perpendicular_L', 'perpendicular_R'],
             ['left', 'right', 'middle'])
 
     def get_guide(self, guide_key):
-        return self.maker.get_parts(
-            self.line, self.guides_parts[guide_key][0], self.guides_parts[guide_key][1])
+        return self.__maker.get_parts(
+            self.line, self.__guide_mode[guide_key][0], self.__guide_mode[guide_key][1])
+
+
+class TextGuideMaker():
+    def set_parts(self, base_text_box):
+        self.__lines = {}
+
+        left_vertical_line = Line()
+        left_vertical_line.make_from_radian(
+            base_text_box.bottom.start,
+            base_text_box.angle_rad + math.radians(90),
+            base_text_box.width * 2)
+        self.__lines['left_vertical_line'] = left_vertical_line
+
+        center_vertical_line = Line()
+        center_vertical_line.make_from_radian(
+            base_text_box.bottom.middle_point,
+            base_text_box.angle_rad + math.radians(90),
+            base_text_box.width * 2)
+        self.__lines['center_vertical_line'] = center_vertical_line
+
+        right_vertical_line = Line()
+        right_vertical_line.make_from_radian(
+            base_text_box.bottom.end,
+            base_text_box.angle_rad + math.radians(90),
+            base_text_box.width * 2)
+        self.__lines['right_vertical_line'] = right_vertical_line
+
+        top_horizontal_line = Line()
+        top_horizontal_line.make_from_radian(
+            base_text_box.right.start,
+            base_text_box.angle_rad,
+            base_text_box.width * 2)
+        self.__lines['top_horizontal_line'] = top_horizontal_line
+
+        center_horizontal_line = Line()
+        center_horizontal_line.make_from_radian(
+            base_text_box.right.middle_point,
+            base_text_box.angle_rad,
+            base_text_box.width * 2)
+        self.__lines['center_horizontal_line'] = center_horizontal_line
+
+        bottom_horizontal_line = Line()
+        bottom_horizontal_line.make_from_radian(
+            base_text_box.right.end,
+            base_text_box.angle_rad,
+            base_text_box.width * 2)
+        self.__lines['bottom_horizontal_line'] = bottom_horizontal_line
+
+    def get_parts(self, box, linear_parts):
+        self.set_parts(box)
+
+        return_lines = []
+
+        for key in linear_parts:
+            return_lines.append(self.__lines[key])
+
+        return return_lines
+
+
+class TextGuide():
+    def __init__(self):
+        define_property(self, name='text_box',
+                        value=TextBox((0, 0), (0, 0), text=''))
+        self.__guide_mode = {}
+        self._set_guide_mode()
+        self.__maker = TextGuideMaker()
+
+    @property
+    def guide_mode(self):
+        return self.__guide_mode
+
+    def _set_guide_mode(self):
+        self.__guide_mode['no'] = ([],)
+        """
+        self.__guide_mode['vertical_all'] = (
+            ['left_vertical_line', 'center_vertical_line', 'right_vertical_line'],)
+        self.__guide_mode['horizontal_all'] = (
+            ['top_horizontal_line', 'center_horizontal_line', 'bottom_horizontal_line'],)
+        self.__guide_mode['vertical_simple'] = (
+            ['center_vertical_line'],)
+        self.__guide_mode['horizontal_simple'] = (
+            ['center_horizontal_line'],)
+        """
+        self.__guide_mode['all'] = (
+            ['left_vertical_line', 'center_vertical_line', 'right_vertical_line',
+             'top_horizontal_line', 'center_horizontal_line', 'bottom_horizontal_line'],)
+
+    def get_guide(self, guide_key):
+        return self.__maker.get_parts(
+            self.text_box, self.__guide_mode[guide_key][0])
