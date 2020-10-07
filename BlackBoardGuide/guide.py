@@ -60,22 +60,13 @@ class FigureGuideMaker():
 
 class FigureGuide():
     def __init__(self):
+        self.__guide_mode = {}
+        define_property(self, name='line', value=Line())
+        self._set_guide_mode()
+        self.__maker = FigureGuideMaker()
 
-
-<< << << < HEAD
-  self.__guide_mode = {}
-   define_property(self, name='line', value=Line())
-    self._set_guide_mode()
-    self.__maker = FigureGuideMaker()
-== == == =
-  self.guides_parts = {}
-   self.line = Line()
-    self.set_guides()
-    self.maker = GuideMaker()
->>>>>> > e9847fcc13a85bcc0a2dff423fe1c169c245d5fe
-
-  @property
-   def guide_mode(self):
+    @property
+    def guide_mode(self):
         return self.__guide_mode
 
     def _set_guide_mode(self):

@@ -1,16 +1,11 @@
-import concurrent.futures
-from define_property import define_property
-from figureparts import Box
-from detector import LineDetector, CharacterDetector
-from guide import FigureGuides
-from detector import LineDetector, TextDetector
-from guide import FigureGuide, TextGuide
 import wx
 import cv2
 import numpy as np
-<< << << < HEAD
-== == == =
->>>>>> > e9847fcc13a85bcc0a2dff423fe1c169c245d5fe
+from guide import FigureGuide, TextGuide
+from detector import LineDetector, TextDetector
+from figureparts import Box
+from define_property import define_property
+import concurrent.futures
 
 
 class MyThread(concurrent.futures.ProcessPoolExecutor):
@@ -82,13 +77,7 @@ class MainWindow(wx.Frame):
         self.guide_window = GuideWindow(self)
         self.guide_window.Show()
         self.line_detector = LineDetector()
-
-
-<< << << < HEAD
         self.chara_detector = TextDetector()
-== == == =
-        self.chara_detector = CharacterDetector()
->>>>>> > e9847fcc13a85bcc0a2dff423fe1c169c245d5fe
         self.is_mouse_down = False
 
         # カメラ
@@ -242,11 +231,7 @@ class MainWindow(wx.Frame):
             guide_display = wx.Display(self.guide_window.display_index)
             _, _, w, h = guide_display.GetGeometry()
             calibrate_frame = self.frame_calibration(
-<<<<<<< HEAD
                 self.webcampanel.calibrate_points.asrearray, w, h)
-=======
-                self.webcampanel.calibrate_points.asarray, w, h)
->>>>>>> e9847fcc13a85bcc0a2dff423fe1c169c245d5fe
             self.line_detector.queue(img=calibrate_frame)
             self.chara_detector.queue(img=calibrate_frame)
 
