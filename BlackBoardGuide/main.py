@@ -191,6 +191,8 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.Refresh()
             self.line_detector.queue(img=calibrate_frame)
             self.chara_detector.queue(img=calibrate_frame)
+            self.line_detector.set_back(img=calibrate_frame)
+            self.chara_detector.set_back(img=calibrate_frame)
         else:
             self.mode.mode = "none"
         self.button_state_change(self.mode.mode)

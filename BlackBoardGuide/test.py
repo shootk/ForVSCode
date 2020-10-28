@@ -31,9 +31,13 @@ detect_low_white = np.array([0, 0, 190])
 detect_high_white = np.array([360, 60, 255])
 
 
-def get_difference(src1_image, src2_image):
-    diff = cv2.absdiff(src1_image, src2_image)
-    return diff
+def get_difference(src1_image, after_image):
+    diff = cv2.absdiff(src1_image, after_image)
+    return cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+
+
+def get_difference_gray(src1_image, after_image):
+    return cv2.absdiff(src1_image, after_image)
 
 
 def get_white(src_image, low_white, high_white):
@@ -41,28 +45,51 @@ def get_white(src_image, low_white, high_white):
     return cv2.inRange(src_image, low_white, high_white)
 
 
+def get_same_part(src1_image, after_image):
+    return cv2.bitwise_and(src1_image, after_image)
+
+
+def get_edge(src_image):
+    return cv2.Canny(src_image, 40, 150)
+
+
 date = dt.now().strftime('%Y-%m-%d-%H-%M-%S')
-src1 = cv2.imread('images/2020-09-28-15-00-54img0.png')
-src1 = get_white(src1, detect_low_white, detect_high_white)
-write_name = './images/' + str(date) + 'white1.png'
-cv2.imwrite(write_name, src1)
 
-src2 = cv2.imread('images/2020-09-28-15-54-07img1.png')
-src2 = get_white(src2, detect_low_white, detect_high_white)
-write_name = './images/' + str(date) + 'white2.png'
-cv2.imwrite(write_name, src2)
+back = cv2.imread('images/back_img.png')
+# back = cv2.cvtColor(back, cv2.COLOR_RGB2HSV_FULL)
+write_name = './images/H.png'
+cv2.imwrite(write_name, back)
 
-src3 = cv2.imread('images/2020-09-28-15-54-07img0.png')
-src3 = get_white(src3, detect_low_white, detect_high_white)
-write_name = './images/' + str(date) + 'white3.png'
-cv2.imwrite(write_name, src3)
+before = cv2.imread('images/before.png')
+# before = cv2.cvtColor(before, cv2.COLOR_RGB2HSV_FULL)
+write_name = './images/I1.png'
+cv2.imwrite(write_name, before)
 
-diff1 = get_difference(src1, src2)
-diff2 = get_difference(src1, src3)
-diff3 = get_difference(src2, src3)
-write_name = './images/' + str(date) + 'diff1.png'
+after = cv2.imread('images/after.png')
+# after = cv2.cvtColor(after, cv2.COLOR_RGB2HSV_FULL)
+write_name = './images/I2.png'
+cv2.imwrite(write_name, after)
+
+diff1 = get_difference(back, before)
+write_name = './images/J1.png'
 cv2.imwrite(write_name, diff1)
-write_name = './images/' + str(date) + 'diff2.png'
+
+diff2 = get_difference(back, after)
+write_name = './images/J2.png'
 cv2.imwrite(write_name, diff2)
-write_name = './images/' + str(date) + 'diff3.png'
+
+diff3 = get_difference_gray(diff1, diff2)
+write_name = './images/K.png'
 cv2.imwrite(write_name, diff3)
+
+white = get_white(after, detect_low_white, detect_high_white)
+write_name = './images/L.png'
+cv2.imwrite(write_name, white)
+
+same = get_same_part(diff3, white)
+write_name = './images/X.png'
+cv2.imwrite(write_name, same)
+
+edge = get_edge(same)
+write_name = './images/Z.png'
+cv2.imwrite(write_name, edge)

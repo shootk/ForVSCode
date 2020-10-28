@@ -15,6 +15,7 @@ class Detector():
             (width, height), dtype=np.uint8)
         define_property(self=self, name='before_draw_image', value=no_image)
         define_property(self=self, name='after_draw_image', value=no_image)
+        define_property(self=self, name='back_image', value=no_image)
         self.__detect_low_white = np.array([160, 160, 140])
         self.__detect_high_white = np.array([190, 220, 190])
 
@@ -46,16 +47,19 @@ class Detector():
         self.before_draw_image = self.after_draw_image
         self.after_draw_image = img
 
-    def get_difference(self, src1_image, src2_image):
-        diff = cv2.absdiff(src1_image, src2_image)
+    def set_back(self, img):
+        self.back_image = img
+
+    def get_difference(self, src_image1, src_image2):
+        diff = cv2.absdiff(src_image1, src_image2)
         return cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 
     def get_white(self, src_image, low_white, high_white):
         src_image = cv2.cvtColor(src_image, cv2.COLOR_BGR2HSV_FULL)
         return cv2.inRange(src_image, low_white, high_white)
 
-    def get_same_part(self, src1_image, src2_image):
-        return cv2.bitwise_and(src1_image, src2_image)
+    def get_same_part(self, src_image1, src_image2):
+        return cv2.bitwise_and(src_image1, src_image2)
 
     def get_edge(self, src_image):
         return cv2.Canny(src_image, 40, 150)
@@ -65,6 +69,21 @@ class Detector():
         for i, picture in enumerate(pic_list):
             write_name = './images/' + str(date) + word + str(i) + '.png'
             cv2.imwrite(write_name, picture)
+
+    def ditect(self, back_image, src_image1, src_image2):
+        if not back_image:
+            back_image = self.back_image
+        if not src_image1:
+            src_image1 = self.before_draw_image
+        if not src_image2:
+            src_image2 = self.after_draw_image
+        diff_back1 = self.get_difference(back_image, src_image1)
+        diff_back2 = self.get_difference(back_image, src_image2)
+        diff_frame = self.get_difference(diff_back1, diff_back2)
+        white = self.get_white(
+            src_image2, self.detect_low_white, self.detect_high_white)
+        same = self.get_same_part(diff_frame, white)
+        return same
 
 
 class LineDetector(Detector):
@@ -96,26 +115,12 @@ class LineDetector(Detector):
                 max_line = line
         return max_line
 
-    def detect(self, before_image=None, after_image=None):
-        if (before_image is None) or (after_image is None):
-            before_image = self.before_draw_image
-            after_image = self.after_draw_image
-        diff = self.get_difference(
-            before_image,
-            after_image)
-        white = self.get_white(
-            after_image,
-            self.detect_low_white,
-            self.detect_high_white)
-        same = self.get_same_part(diff, white)
+    def detect_line(self, back_image=None, before_image=None, after_image=None):
+        same = self.detect(back_image, before_image, after_image)
         edge = self.get_edge(same)
-        # save_list = [before_image, after_image, diff, white, same, edge]
-        # self.save_picture(save_list, 'line')
         if edge is not None:
             lines = self.get_lines(edge)
-            # print('lines :', lines)
             line = self.get_longest_line(lines)
-            # print('line :', line)
             src_image = np.zeros(same.shape)
             src_image = cv2.line(
                 src_image, tuple(line.start.coordinate), tuple(line.end.coordinate), (255, 255, 255), 2)
@@ -144,18 +149,8 @@ class TextDetector(Detector):
         define_property(self=self, name='detect_text_box',
                         value=TextBox((0, 0), (0, 0), text=''))
 
-    def detect(self, before_image=None, after_image=None, language='jpn'):
-        if (before_image is None) or (after_image is None):
-            before_image = self.before_draw_image
-            after_image = self.after_draw_image
-        diff = self.get_difference(
-            before_image,
-            after_image)
-        white = self.get_white(
-            after_image,
-            self.detect_low_white,
-            self.detect_high_white)
-        same = self.get_same_part(diff, white)
+    def detect(self, back_image=None, before_image=None, after_image=None, language='jpn'):
+        same = self.detect(back_image, before_image, after_image)
         _, threshould = cv2.threshold(same, 0, 255, cv2.THRESH_OTSU)
         inverse = cv2.bitwise_not(threshould)
         cv2.imwrite('./images/target.png', inverse)
@@ -168,9 +163,6 @@ class TextDetector(Detector):
             builder=builder)
         text_boxs = self.arrange_coordinate(
             detect_texts=detect_texts, height=target_image.height)
-        save_list = [before_image, after_image,
-                     diff, white, same, threshould, inverse]
-        self.save_picture(save_list, 'img')
         text_box = self.get_corner_box(
             text_boxs, 0, 0)
         return text_box
