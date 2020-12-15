@@ -51,11 +51,9 @@ class Detector():
         self.back_image = img
 
     def get_difference(self, src_image1, src_image2):
-        diff = cv2.absdiff(src_image1, src_image2)
-        return cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+        return cv2.absdiff(src_image1, src_image2)
 
     def get_white(self, src_image, low_white, high_white):
-        src_image = cv2.cvtColor(src_image, cv2.COLOR_BGR2HSV_FULL)
         return cv2.inRange(src_image, low_white, high_white)
 
     def get_same_part(self, src_image1, src_image2):
@@ -70,7 +68,7 @@ class Detector():
             write_name = './images/' + str(date) + word + str(i) + '.png'
             cv2.imwrite(write_name, picture)
 
-    def ditect(self, back_image, src_image1, src_image2):
+    def detect(self, back_image, src_image1, src_image2):
         if not back_image:
             back_image = self.back_image
         if not src_image1:
@@ -80,8 +78,13 @@ class Detector():
         diff_back1 = self.get_difference(back_image, src_image1)
         diff_back2 = self.get_difference(back_image, src_image2)
         diff_frame = self.get_difference(diff_back1, diff_back2)
+        diff_frame = cv2.cvtColor(diff_frame, cv2.COLOR_BGR2GRAY)
+        cv2.imshow("1", diff_back1)
+        cv2.imshow("2", diff_back2)
+        cv2.imshow("1-2", diff_frame)
+        src_image3 = cv2.cvtColor(src_image2, cv2.COLOR_BGR2HSV_FULL)
         white = self.get_white(
-            src_image2, self.detect_low_white, self.detect_high_white)
+            src_image3, self.detect_low_white, self.detect_high_white)
         same = self.get_same_part(diff_frame, white)
         return same
 
@@ -149,7 +152,7 @@ class TextDetector(Detector):
         define_property(self=self, name='detect_text_box',
                         value=TextBox((0, 0), (0, 0), text=''))
 
-    def detect(self, back_image=None, before_image=None, after_image=None, language='jpn'):
+    def detect_text(self, back_image=None, before_image=None, after_image=None, language='jpn'):
         same = self.detect(back_image, before_image, after_image)
         _, threshould = cv2.threshold(same, 0, 255, cv2.THRESH_OTSU)
         inverse = cv2.bitwise_not(threshould)

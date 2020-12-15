@@ -4,6 +4,8 @@ from PIL import Image
 import cv2
 from datetime import datetime as dt
 import numpy as np
+from detector import LineDetector
+import time
 """
 TESSERACT_PATH = 'C:\\Program Files (x86)\\Tesseract-OCR'
 TESSDATA_PATH = 'C:\\Program Files (x86)\\Tesseract-OCR\\tessdata'
@@ -26,7 +28,7 @@ for text in texts:
     print(text.position, text.content)
 """
 
-
+"""
 detect_low_white = np.array([0, 0, 190])
 detect_high_white = np.array([360, 60, 255])
 
@@ -93,3 +95,22 @@ cv2.imwrite(write_name, same)
 edge = get_edge(same)
 write_name = './images/Z.png'
 cv2.imwrite(write_name, edge)
+"""
+
+
+def main():
+    detector = LineDetector()
+    camera = cv2.VideoCapture(1)
+    while():
+        return_value, frame = camera.read()
+        if return_value:
+            back_image = frame
+            break
+    detector.back_image = back_image
+
+    while():
+        time.sleep(1)
+
+
+if __name__ == "__main__":
+    main()

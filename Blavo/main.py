@@ -245,8 +245,8 @@ class MainWindow(wx.Frame):
             self.guide_window.guide_panel.text_key_num += 1
             self.guide_window.guide_panel.text_key_num %= len(
                 self.guide_window.guide_panel.text_guide_mode_key)
-            detected_line = self.line_detector.detect()
-            text_box = self.chara_detector.detect()
+            detected_line = self.line_detector.detect_line()
+            text_box = self.chara_detector.detect_text()
             self.show_guide(detected_line, text_box)
 
     def closed_point_index(self, pt, target_pts):
