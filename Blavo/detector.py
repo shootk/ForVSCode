@@ -85,6 +85,7 @@ class Detector():
         src_image3 = cv2.cvtColor(src_image2, cv2.COLOR_BGR2HSV_FULL)
         white = self.get_white(
             src_image3, self.detect_low_white, self.detect_high_white)
+        cv2.imshow("white", white)
         same = self.get_same_part(diff_frame, white)
         return same
 

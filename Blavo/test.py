@@ -99,17 +99,10 @@ cv2.imwrite(write_name, edge)
 
 
 def main():
-    detector = LineDetector()
-    camera = cv2.VideoCapture(1)
-    while():
-        return_value, frame = camera.read()
-        if return_value:
-            back_image = frame
-            break
-    detector.back_image = back_image
-
-    while():
-        time.sleep(1)
+    src = cv2.imread("./images/X.png")
+    dst = cv2.Canny(image=src, threshold1=40, threshold2=150)
+    write_name = './images/Z.png'
+    cv2.imwrite(write_name, dst)
 
 
 if __name__ == "__main__":

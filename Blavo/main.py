@@ -57,6 +57,12 @@ class WebcamPanel(wx.Panel):
                          tuple(line.start.coordinate),
                          tuple(line.end.coordinate),
                          (187, 111, 0), 2)
+                cv2.circle(frame,
+                           tuple(line.start.coordinate),
+                           radius=8,
+                           color=(187, 111, 0),
+                           thickness=cv2.FILLED)
+
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.bmp.CopyFromBuffer(frame)
             self.Refresh()
@@ -70,7 +76,7 @@ class MainWindow(wx.Frame):
     def __init__(self):
         # 継承
         wx.Frame.__init__(self, None)
-        self.Title = "webcam"
+        self.Title = "Blavo"
         mode_list = ['none', 'calibration', 'set_color', 'figure', 'text']
         self.mode = Mode(mode_list=mode_list, initial_mode='None')
         # ガイドを表示するウィンドウを作成，表示
@@ -81,7 +87,7 @@ class MainWindow(wx.Frame):
         self.is_mouse_down = False
 
         # カメラ
-        self.camera = cv2.VideoCapture(1)
+        self.camera = cv2.VideoCapture(0)
         return_value, frame = self.camera.read()
         height, width = frame.shape[:2]
         # カメラパネルに渡す
@@ -102,9 +108,9 @@ class MainWindow(wx.Frame):
         self.cancel_button.Disable()
         self.cancel_button.Bind(wx.EVT_BUTTON, self.state_change)
 
-        self.figure_button = wx.Button(self, wx.ID_ANY, '図形ガイド')
-        self.figure_button.SetBackgroundColour('#ffffff')
-        self.figure_button.Bind(wx.EVT_BUTTON, self.state_change)
+        self.guide_button = wx.Button(self, wx.ID_ANY, 'ガイド開始')
+        self.guide_button.SetBackgroundColour('#ffffff')
+        self.guide_button.Bind(wx.EVT_BUTTON, self.state_change)
 
         self.webcampanel.Bind(wx.EVT_LEFT_DOWN, self.mouse_down)
         self.webcampanel.Bind(wx.EVT_MOTION, self.mouse_move)
@@ -117,7 +123,7 @@ class MainWindow(wx.Frame):
                              2, wx.BOTTOM | wx.EXPAND)
         button_box_sizer.Add(self.set_color_button,
                              2, wx.BOTTOM | wx.EXPAND)
-        button_box_sizer.Add(self.figure_button, 1, wx.EXPAND)
+        button_box_sizer.Add(self.guide_button, 1, wx.EXPAND)
 
         # メインウィンドウのサイズ決定，パネル，ボタン配置
         main_window_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -141,21 +147,21 @@ class MainWindow(wx.Frame):
 
     def button_state_change(self, mode):
         self.calibration_button.SetBackgroundColour('#ffffff')
-        self.figure_button.SetBackgroundColour('#ffffff')
+        self.guide_button.SetBackgroundColour('#ffffff')
         self.cancel_button.SetBackgroundColour('#ffffff')
         self.cancel_button.Disable()
 
         if mode == "none":
             self.set_color_button.Enable()
             self.calibration_button.Enable()
-            self.figure_button.Enable()
+            self.guide_button.Enable()
 
         elif mode == "calibration":
             self.calibration_button.SetBackgroundColour('#99aaff')
 
         elif mode == "figure":
-            self.figure_button.SetBackgroundColour('#74e69d')
-            self.figure_button.Enable()
+            self.guide_button.SetBackgroundColour('#74e69d')
+            self.guide_button.Enable()
             self.calibration_button.Disable()
             self.set_color_button.Disable()
             self.cancel_button.Enable()
